@@ -9,18 +9,17 @@ Cassandra is distributed under the Apache License, Version 2.0
 
 Installation
 ------------
-* Unpack the tar ball in the misc directory the /var directory:
-        cd /var; tar jxvf cassandra.tar.bz2
-* The scripts expect jdk 1.7 in /usr/local. This is also provided
-  in the misc directory:
-        tar jxvf misc/jdk1.7-drop.tar.bz2 /usr/local/
-* When you build, make sure to use the java 1.7 compiler
+* Unpack the tar ball to the /var directory:
+        cd /var; tar jxvf cassandra-<version>.tar.bz2
+* Please use jdk 1.7
+* Run ant in the /var/cassandra-<version> directory
+
 Congratulations, Cassandra is now installed.
 
 Setup
 ------
 * cd into the cassandra directory
-        cd /var/cassandra
+        cd /var/cassandra-<version>
 * The default data directories are in /mnt/d1, mnt/d2, mnt/d3. The
   commitlog directory is /mnt/d4/commitlog. This is assumed in
   the conf file provided. If you dont care to change the conf do
@@ -53,10 +52,10 @@ Optional setup:
 Starting the server
 -------------------
 All you have to do is:
-cd /var/cassandra
-./bin/start-server&
+cd /var/cassandra-<version>
+./bin/start-server &
 
-To check if the server is started, there are 2 ways:
+To check if the server is started, there are 3 ways:
 
 * Check if the process exists:
 	ps aux | grep peer
@@ -66,6 +65,6 @@ To check if the server is started, there are 2 ways:
 
 Stopping the server
 -------------------
-cd /var/cassandra
+cd /var/cassandra-<version>
 ./bin/stop-server
 
