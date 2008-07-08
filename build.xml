@@ -15,6 +15,7 @@
     -->
     <path id="cassandra.classpath">
         <pathelement location="${build.classes}"/>
+        <pathelement location="${build.lib}/activation.jar"/>
         <pathelement location="${build.lib}/asm-all-2.2.1.jar"/>
         <pathelement location="${build.lib}/azul-collections.jar"/>
         <!-- <pathelement location="${build.lib}/bcel-5.2.jar"/> -->
