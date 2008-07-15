@@ -36,6 +36,7 @@ public class DatabaseDescriptor
     private static int storagePort_ = 7000;
     private static int controlPort_ = 7001;
     private static int httpPort_ = 7002;
+    private static int thriftPort_ = 9160;
     private static String clusterName_ = "Test";
     private static int replicationFactor_ = 3;
     private static long rpcTimeoutInMillis_ = 2000;
@@ -138,6 +139,11 @@ public class DatabaseDescriptor
         port = xmlUtils.getNodeValue(rootNode, "HttpPort");
         if ( port != null )
             httpPort_ = Integer.parseInt(port);
+
+        /* Thrift port for Thrift messages */
+        port = xmlUtils.getNodeValue(rootNode, "ThriftPort");
+        if ( port != null )
+            thriftPort_ = Integer.parseInt(port);
 
         /* Touch Key Cache Size */
         String touchKeyCacheSize = xmlUtils.getNodeValue(rootNode, "TouchKeyCacheSize");
@@ -372,6 +378,11 @@ public class DatabaseDescriptor
     public static int getHttpPort()
     {
         return httpPort_;
+    }
+
+    public static int getThriftPort()
+    {
+        return thriftPort_;
     }
 
     public static int getReplicationFactor()

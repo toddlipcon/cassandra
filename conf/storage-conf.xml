@@ -7,8 +7,9 @@
    <RpcTimeoutInMillis>5000</RpcTimeoutInMillis>
    <StoragePort>7000</StoragePort>
    <ControlPort>7001</ControlPort>
-   <ColumnIndexSizeInKB>256</ColumnIndexSizeInKB>
    <HttpPort>7002</HttpPort>
+   <ThriftPort>9160</ThriftPort>
+   <ColumnIndexSizeInKB>256</ColumnIndexSizeInKB>
    <MetadataDirectory>/mnt/d3/system</MetadataDirectory>
    <CommitLogDirectory>/mnt/d4/commitlog</CommitLogDirectory>
    <CommitLogRotationThresholdInMB>128</CommitLogRotationThresholdInMB>
