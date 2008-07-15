@@ -1,75 +1,105 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project basedir="." default="build" name="cassandra">
-    <property environment="env"/>
-    <property name="debuglevel" value="source,lines,vars"/>
+<?xml version="1.0"?>
 
-    <property name="basedir" value="."/>
-    <property name="build.src" value="${basedir}/src"/>
-    <property name="build.lib" value="${basedir}/lib"/>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<project name="Cassandra" default="compile">
+
+    <!-- =========================================== -->
+    <!--                   PROPERTIES                -->
+    <!-- =========================================== -->
+
+    <!-- Load all the default properties, and any the user wants    -->
+    <!-- to contribute (without having to type -D or edit this file -->
+    <property file="${user.home}/build.properties" />
+    <property file="${basedir}/build.properties" />
+
+    <property name="Name" value="Cassandra"/>
+    <property name="name" value="cassandra"/>
+    <property name="version" value="0.1.0"/>
+    <property name="final.name" value="${name}-${version}"/>
+    <property name="year" value="2008"/>
+
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="lib.dir" value="${basedir}/lib"/>
+    <property name="conf.dir" value="${basedir}/conf"/>
+    <property name="docs.dir" value="${basedir}/docs"/>
+    <property name="interface.dir" value="${basedir}/interface"/>
+
     <property name="build.dir" value="${basedir}/build"/>
     <property name="build.classes" value="${build.dir}/classes"/>
-    <property name="final.name" value="cassandra"/>
 
-    <!-- 
-	 Add all the dependencies.
-    -->
-    <path id="cassandra.classpath">
+    <property name="javac.debug" value="on"/>    
+    <property name="javac.debuglevel" value="source,lines,vars"/>
+
+    <!-- =========================================== -->
+    <!--                   CLASSPATHS                -->
+    <!-- =========================================== -->
+
+    <!-- the normal classpath includes the lib/ and conf/ dirs -->
+    <path id="classpath">
         <pathelement location="${build.classes}"/>
-        <pathelement location="${build.lib}/activation.jar"/>
-        <pathelement location="${build.lib}/asm-all-2.2.1.jar"/>
-        <pathelement location="${build.lib}/azul-collections.jar"/>
-        <!-- <pathelement location="${build.lib}/bcel-5.2.jar"/> -->
-        <pathelement location="${build.lib}/commons-javaflow-1.0-SNAPSHOT.jar"/>
-        <pathelement location="${build.lib}/commons-logging-1.0.4.jar"/>
-        <pathelement location="${build.lib}/j2ee.jar"/>
-        <pathelement location="${build.lib}/commons-math-1.1.jar"/>
-        <pathelement location="${build.lib}/libthrift.jar"/>
-        <pathelement location="${build.lib}/libfb303.jar"/>
-        <pathelement location="${build.lib}/log4j-1.2.8.jar"/>
-        <pathelement location="${build.lib}/xerces.jar"/>
-        <pathelement location="${build.lib}/zookeeper-2.2.0.jar"/>
-        <pathelement location="${build.lib}/"/>
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar" />
+            <exclude name="**/excluded/" />
+        </fileset>
+        <pathelement location="${conf.dir}"/>
     </path>
 
-    <!--
-	Setup the output directories.
-    -->
+
+    <!-- =========================================== -->
+    <!--                 BUILD TARGETS               -->
+    <!-- =========================================== -->
+
+    <!-- The "init" target does work needed by all targets -->
     <target name="init">
         <mkdir dir="${build.classes}"/>
     </target>
+
+    <!-- The "clean" target deletes the build files and their directories -->
     <target name="clean">
         <delete file="${build.dir}/${final.name}.jar"/>
         <delete dir="${build.classes}"/>
     </target>
-    <target depends="clean" name="cleanall"/>
 
-    <!--
-	The build target builds all the .class files
-    -->
-    <target depends="build-subprojects,build-project" name="build"/>
-    <target name="build-subprojects"/>
-    <target depends="init" name="build-project">
-        <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="${build.classes}">
-            <src path="${build.src}"/>
-            <classpath refid="cassandra.classpath"/>
+    <!-- The "compile" target builds all the .class files -->
+    <target name="compile" depends="init">
+        <javac
+         debug="${javac.debug}"
+         debuglevel="${javac.debuglevel}"
+         destdir="${build.classes}"
+         srcdir="${src.dir}">
+         <classpath refid="classpath"/>
         </javac>
     </target>
 
-    <!--
-	The jar target makes cassandra.jar output.
-    -->
-    <target name="jar" depends="build">
+    <!-- The "jar" target makes the .jar output. -->
+    <target name="jar" depends="compile">
     <jar jarfile="${build.dir}/${final.name}.jar"
          basedir="${build.classes}">
       <manifest>
         <section name="com/facebook/infrastructure">
           <attribute name="Implementation-Title" value="Cassandra"/>
-          <attribute name="Implementation-Version" value="1.1"/>
+          <attribute name="Implementation-Version" value="${version}"/>
           <attribute name="Implementation-Vendor" value="Facebook"/>
 	  <attribute name="Premain-Class" value="com.facebook.infrastructure.continuations.ContinuationAgent"/>
         </section>
       </manifest>
     </jar>
-  </target>
+    </target>
+
 </project>

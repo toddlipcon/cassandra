@@ -10,9 +10,9 @@ Cassandra is distributed under the Apache License, Version 2.0
 Installation
 ------------
 * Unpack the tar ball to the /var directory:
-        cd /var; tar jxvf cassandra-<version>.tar.bz2
-* Please use jdk 1.7
-* Run ant in the /var/cassandra-<version> directory
+        cd /var; tar xvzf cassandra-<version>.tar.gz
+* Please use jdk 1.7; Cassandra will run with 1.6 but frequently core dumps on quad-core machines
+* Run "ant jar" in the /var/cassandra-<version> directory
 
 Congratulations, Cassandra is now installed.
 
@@ -57,9 +57,9 @@ cd /var/cassandra-<version>
 
 To check if the server is started, there are 3 ways:
 
-* Check if the process exists:
-	ps aux | grep peer
-* Open firefox, and point it at:
+* Check if the process exists, e.g.:
+	ps -ef | grep cassandra
+* Open a web browser, and point it at:
 	http://<node on which the server is running>:7002
 * Open up jconsole and observe the process is running.
 
