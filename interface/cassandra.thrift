@@ -1,12 +1,13 @@
-#!/usr/local/bin/thrift --java --php
-
 #
 # Interface definition for peer storage
 # 
 
-include "../../../fb303/trunk/if/fb303.thrift"
+include "fb303.thrift"
 
-java_package com.facebook.infrastructure.service
+namespace java com.facebook.infrastructure.service
+namespace py com.facebook.infrastructure.service
+namespace cpp com.facebook.infrastructure.service
+namespace php com.facebook.infrastructure.service
 
 
 struct column_t 
