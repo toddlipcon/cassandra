@@ -1188,9 +1188,10 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         /* start the analytics context package */
         AnalyticsContext.instance().start();
         /* report our existence to ZooKeeper instance and start the leader election service */
-        reportToZookeeper();         
-        LeaderElector.instance().start();
-        /* Start the storage load balancer */
+        // 20080716: Comment these lines out until Zookeeper intregation is complete (jeff.hammerbacher)
+        //reportToZookeeper();         
+        //LeaderElector.instance().start();
+        /*Start the storage load balancer */
         storageLoadBalancer_.start();
         /* Register with the Gossiper for EndPointState notifications */
         Gossiper.instance().register(this);

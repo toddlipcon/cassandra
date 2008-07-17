@@ -319,7 +319,9 @@ public class HttpRequestVerbHandler implements IVerbHandler
             String status = ( FailureDetector.instance().isAlive(curNode) ) ? "Up" : "Down";
             formatter.addCol(status);
             //Leader
-            boolean isLeader = StorageService.instance().isLeader(curNode);
+            // 20080716: Hardcode "isLeader = false;" until Zookeeper integration is complete (jeff.hammerbacher)
+            // boolean isLeader = StorageService.instance().isLeader(curNode);
+            boolean isLeader = false;
             formatter.addCol(Boolean.toString(isLeader));
             //Load Info
             String loadInfo = getLoadInfo(curNode);
