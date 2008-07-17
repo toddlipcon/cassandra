@@ -1019,9 +1019,9 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
                 int port = DatabaseDescriptor.getThriftPort();
 		try
 		{
-			CassandraImpl peerStorageServer = new CassandraImpl();
-			peerStorageServer.start();
-			Cassandra.Processor processor = new Cassandra.Processor(peerStorageServer);
+			CassandraImpl cassandraServer = new CassandraImpl();
+			cassandraServer.start();
+			Cassandra.Processor processor = new Cassandra.Processor(cassandraServer);
 			// Transport
 			TServerSocket tServerSocket =  new TServerSocket(port);
 			 // Protocol factory
