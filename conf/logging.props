@@ -15,7 +15,7 @@ log4j.appender.R.DatePattern='.'yyyy-MM-dd-HH
 # Edit the next line to point to your logs directory.
 # The last part of the name is the log file name.
 #
-log4j.appender.R.File=/mnt/d2/logs/system.log
+log4j.appender.R.File=/var/cassandra/logs/system.log
 log4j.appender.R.layout=org.apache.log4j.SimpleLayout
 #
 #

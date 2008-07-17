@@ -39,7 +39,7 @@ public class DatabaseDescriptor
     private static int thriftPort_ = 9160;
     private static String clusterName_ = "Test";
     private static int replicationFactor_ = 3;
-    private static long rpcTimeoutInMillis_ = 2000;
+    private static long rpcTimeoutInMillis_ = 5000;
     private static Set<String> seeds_ = new HashSet<String>();
     private static String multicastAddr_ = "230.0.0.1";
     private static String metadataDirectory_;
@@ -61,7 +61,7 @@ public class DatabaseDescriptor
     private static Map<String, String> cfToColumnTypeMap_ = new HashMap<String, String>();
     private static Map<String, String> cfToIndexPropertyMap_ = new HashMap<String, String>();
     /* if the size of columns or super-columns are more than this, indexing will kick in */
-    private static int columnIndexSizeInKB_;
+    private static int columnIndexSizeInKB_ = 256;
     /* Size of touch key cache */
     private static int touchKeyCacheSize_ = 1024;
     /* Number of hours to keep a memtable in memory */
@@ -158,14 +158,8 @@ public class DatabaseDescriptor
 
         /* read the size at which we should do column indexes */
         String columnIndexSizeInKB = xmlUtils.getNodeValue(rootNode, "ColumnIndexSizeInKB");
-        if(columnIndexSizeInKB == null)
-        {
-        	columnIndexSizeInKB_ = 64;
-        }
-        else
-        {
-        	columnIndexSizeInKB_ = Integer.parseInt(columnIndexSizeInKB);
-        }
+        if(columnIndexSizeInKB != null)
+            columnIndexSizeInKB_ = Integer.parseInt(columnIndexSizeInKB);
 
         /* metadata directory */
         metadataDirectory_ = xmlUtils.getNodeValue(rootNode, "MetadataDirectory");
@@ -175,7 +169,7 @@ public class DatabaseDescriptor
         {
             if ( os.equals("Linux") )
             {
-                metadataDirectory_ = "/var/storage/system";
+                metadataDirectory_ = "/var/cassandra/system";
             }
         }
 
@@ -190,7 +184,7 @@ public class DatabaseDescriptor
         {
             if ( os.equals("Linux") )
             {
-                dataFileDirectories_ = new String[]{"/var/storage/data"};
+                dataFileDirectories_ = new String[]{"/var/cassandra/data"};
             }
         }
 
@@ -202,11 +196,11 @@ public class DatabaseDescriptor
         {
             if ( os.equals("Linux") )
             {
-                bootstrapFileDirectory_ = "/var/storage/bootstrap";
+                bootstrapFileDirectory_ = "/var/cassandra/bootstrap";
             }
         }
 
-        /* bootstrap file directory */
+        /* staging file directory */
         stagingFileDirectory_ = xmlUtils.getNodeValue(rootNode, "StagingFileDirectory");
         if ( stagingFileDirectory_ != null )
             FileUtils.createDirectory(stagingFileDirectory_);
@@ -214,7 +208,7 @@ public class DatabaseDescriptor
         {
             if ( os.equals("Linux") )
             {
-                stagingFileDirectory_ = "/var/storage/staging";
+                stagingFileDirectory_ = "/var/cassandra/staging";
             }
         }
 
@@ -226,7 +220,7 @@ public class DatabaseDescriptor
         {
             if ( os.equals("Linux") )
             {
-                logFileDirectory_ = "/var/storage/commitlog";
+                logFileDirectory_ = "/var/cassandra/commitlog";
             }
         }
 
