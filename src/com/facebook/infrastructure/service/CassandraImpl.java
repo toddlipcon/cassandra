@@ -1016,13 +1016,13 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 
 	public static void main(String[] args) throws Throwable
 	{
-                int port = DatabaseDescriptor.getThriftPort();
 		try
 		{
 			CassandraImpl cassandraServer = new CassandraImpl();
 			cassandraServer.start();
 			Cassandra.Processor processor = new Cassandra.Processor(cassandraServer);
 			// Transport
+                        int port = DatabaseDescriptor.getThriftPort();
 			TServerSocket tServerSocket =  new TServerSocket(port);
 			 // Protocol factory
 			TProtocolFactory tProtocolFactory = new TBinaryProtocol.Factory();
@@ -1043,3 +1043,4 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 	}
 
 }
+
