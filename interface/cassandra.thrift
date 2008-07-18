@@ -1,5 +1,5 @@
 #
-# Interface definition for peer storage
+# Interface definition for Cassandra
 # 
 
 include "fb303.thrift"
