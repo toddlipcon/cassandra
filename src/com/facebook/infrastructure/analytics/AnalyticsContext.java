@@ -70,7 +70,7 @@ public class AnalyticsContext implements IComponentShutdown
 	private static final int DEFAULT_PORT = 8649;
 	private static final int BUFFER_SIZE = 1500;			 // as per libgmond.c
 
-	private static final Map<Class,String> typeTable_ = new HashMap<Class,String>(5);
+	private static final Map<Class<?>,String> typeTable_ = new HashMap<Class<?>,String>(5);
 
 	private Map<String,RecordMap> bufferedData_ = new HashMap<String,RecordMap>();
     /* Keeps the MetricRecord for each abstraction that implements IAnalyticsSource */

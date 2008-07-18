@@ -687,8 +687,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
-			Set keys = batchMutation.cfmap.keySet();
-			Iterator keyIter = keys.iterator();
+			Set<String> keys = batchMutation.cfmap.keySet();
+			Iterator<String> keyIter = keys.iterator();
 			while (keyIter.hasNext())
 			{
 				Object key = keyIter.next(); // Get the next key.
@@ -738,8 +738,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
-			Set keys = batchMutation.cfmap.keySet();
-			Iterator keyIter = keys.iterator();
+			Set<String> keys = batchMutation.cfmap.keySet();
+			Iterator<String> keyIter = keys.iterator();
 			while (keyIter.hasNext())
 			{
 				Object key = keyIter.next(); // Get the next key.
@@ -928,8 +928,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
-			Set keys = batchMutationSuper.cfmap.keySet();
-			Iterator keyIter = keys.iterator();
+			Set<String> keys = batchMutationSuper.cfmap.keySet();
+			Iterator<String> keyIter = keys.iterator();
 			while (keyIter.hasNext())
 			{
 				Object key = keyIter.next(); // Get the next key.
@@ -967,8 +967,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
-			Set keys = batchMutationSuper.cfmap.keySet();
-			Iterator keyIter = keys.iterator();
+			Set<String> keys = batchMutationSuper.cfmap.keySet();
+			Iterator<String> keyIter = keys.iterator();
 			while (keyIter.hasNext())
 			{
 				Object key = keyIter.next(); // Get the next key.

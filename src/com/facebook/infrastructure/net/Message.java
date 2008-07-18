@@ -135,9 +135,9 @@ public class Message implements java.io.Serializable
         return header_.getMessageId();
     }
     
-    public Class[] getTypes()
+    public Class<?>[] getTypes()
     {
-        List<Class> types = new ArrayList<Class>();
+        List<Class<?>> types = new ArrayList<Class<?>>();
         
         for ( int i = 0; i < body_.length; ++i )
         {
@@ -193,7 +193,7 @@ public class Message implements java.io.Serializable
     private String getBodyTypes()
     {
         StringBuffer sbuf = new StringBuffer("");
-        Class[] types = getTypes();
+        Class<?>[] types = getTypes();
         for ( int i = 0; i < types.length; ++i )
         {
             sbuf.append(types[i].getName());

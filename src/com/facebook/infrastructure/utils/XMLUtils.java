@@ -104,25 +104,25 @@ public class XMLUtils
 	    return values;
 	}
 
-    public Map getNodeValuesWithAttrs(String xql) throws TransformerException{
+    public Map<String,List<String>> getNodeValuesWithAttrs(String xql) throws TransformerException{
     	return getNodeValuesWithAttrs(rootNode_, xql);
     }
 
-    public Map getNodeValuesWithAttrs(Node n, String xql) throws TransformerException
+    public Map<String,List<String>> getNodeValuesWithAttrs(Node n, String xql) throws TransformerException
 	{
 	    NodeList nl = getRequestedNodeList(n, xql);
 	    int size = nl.getLength();
-	    Map value = new HashMap();
+	    Map<String,List<String>> value = new HashMap();
 
 	    for ( int i = 0; i < size; ++i )
 	    {
             Node node = nl.item(i);
             String attr = node.getAttributes().item(0).getNodeValue();             
             node = node.getFirstChild();
-            List list = (List)value.get(attr);
+            List<String> list = (List)value.get(attr);
             if ( list == null )
             {
-                list = new ArrayList();
+                list = new ArrayList<String>();
             }
             list.add(node.getNodeValue());
             value.put(attr, list);

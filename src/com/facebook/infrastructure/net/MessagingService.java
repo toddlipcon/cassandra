@@ -350,7 +350,7 @@ public class MessagingService implements IMessagingService, MessagingServiceMBea
     
     public void deregisterAllVerbHandlers(EndPoint localEndPoint)
     {
-        Iterator keys = verbHandlers_.keySet().iterator();
+        Iterator<String> keys = verbHandlers_.keySet().iterator();
         String key = null;
         
         /*

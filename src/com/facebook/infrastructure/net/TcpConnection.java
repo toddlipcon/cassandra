@@ -43,7 +43,7 @@ import com.facebook.infrastructure.net.sink.*;
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
 
-public class TcpConnection extends SelectionKeyHandler implements Comparable
+public class TcpConnection extends SelectionKeyHandler implements Comparable<TcpConnection>
 {
     // logging and profiling.
     private static Logger logger_ = Logger.getLogger(TcpConnection.class);  
@@ -555,13 +555,8 @@ public class TcpConnection extends SelectionKeyHandler implements Comparable
         return pendingWrites_.size();
     }
     
-    public int compareTo(Object o)
+    public int compareTo(TcpConnection o)
     {
-        if (o instanceof TcpConnection) 
-        {
-            return pendingWrites_.size() - ((TcpConnection) o).pendingWrites_.size();            
-        }
-                    
-        throw new IllegalArgumentException();
+        return pendingWrites_.size() - ((TcpConnection) o).pendingWrites_.size();            
     }
 }

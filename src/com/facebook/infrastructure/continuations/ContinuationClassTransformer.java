@@ -50,7 +50,7 @@ class ContinuationClassTransformer implements ClassFileTransformer
         transformer_ = transformer;        
     }
     
-    public byte[] transform(ClassLoader classLoader, String className, Class redefiningClass, ProtectionDomain domain, byte[] bytes) throws IllegalClassFormatException
+    public byte[] transform(ClassLoader classLoader, String className, Class<?> redefiningClass, ProtectionDomain domain, byte[] bytes) throws IllegalClassFormatException
     {                       
         /*
          * Use the ASM class reader to see which classes support
