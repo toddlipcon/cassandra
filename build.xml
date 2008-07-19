@@ -42,6 +42,11 @@
 
     <property name="build.dir" value="${basedir}/build"/>
     <property name="build.classes" value="${build.dir}/classes"/>
+    <property name="build.docs" value="${build.dir}/docs"/>
+    <property name="build.javadoc" value="${build.docs}/api"/>
+
+    <property name="javadoc.link.java"
+              value="http://java.sun.com/javase/6/docs/api/"/>
 
     <property name="javac.debug" value="on"/>    
     <property name="javac.debuglevel" value="source,lines,vars"/>
@@ -65,19 +70,37 @@
     <!--                 BUILD TARGETS               -->
     <!-- =========================================== -->
 
-    <!-- The "init" target does work needed by all targets -->
-    <target name="init">
+    <target name="init" description="Create the directories needed to build Cassandra">
         <mkdir dir="${build.classes}"/>
     </target>
 
-    <!-- The "clean" target deletes the build files and their directories -->
-    <target name="clean">
+    <target name="clean" description="Delete the build files and their directories">
         <delete file="${build.dir}/${final.name}.jar"/>
         <delete dir="${build.classes}"/>
     </target>
 
-    <!-- The "compile" target builds all the .class files -->
-    <target name="compile" depends="init">
+    <target name="javadoc" description="Generate javadoc">
+      <mkdir dir="${build.javadoc}"/>
+      <javadoc 
+       packagenames="com.facebook.infrastructure.*"
+       destdir="${build.javadoc}"
+       author="true"
+       version="true"
+       use="true"
+       windowtitle="${Name} ${version} API"
+       doctitle="${Name} ${version} API"
+      >
+        <packageset dir="${src.dir}"/>
+        <link href="${javadoc.link.java}"/>
+
+        <classpath >
+          <path refid="classpath" />
+          <pathelement path="${java.class.path}"/>
+        </classpath>
+      </javadoc>
+    </target>	
+
+    <target name="compile" depends="init" description="Build the Cassandra classes">
         <javac
          debug="${javac.debug}"
          debuglevel="${javac.debuglevel}"
@@ -87,8 +110,7 @@
         </javac>
     </target>
 
-    <!-- The "jar" target makes the .jar output. -->
-    <target name="jar" depends="compile">
+    <target name="jar" depends="compile" description="Make the Cassandra jarfile">
     <jar jarfile="${build.dir}/${final.name}.jar"
          basedir="${build.classes}">
       <manifest>
