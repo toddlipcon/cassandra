@@ -19,98 +19,115 @@
 
 <project name="Cassandra" default="compile">
 
-    <!-- =========================================== -->
-    <!--                   PROPERTIES                -->
-    <!-- =========================================== -->
+  <!-- =========================================== -->
+  <!--                   PROPERTIES                -->
+  <!-- =========================================== -->
 
-    <!-- Load all the default properties, and any the user wants    -->
-    <!-- to contribute (without having to type -D or edit this file -->
-    <property file="${user.home}/build.properties" />
-    <property file="${basedir}/build.properties" />
+  <!-- Load all the default properties, and any the user wants    -->
+  <!-- to contribute (without having to type -D or edit this file -->
+  <property file="${user.home}/build.properties" />
+  <property file="${basedir}/build.properties" />
 
-    <property name="Name" value="Cassandra"/>
-    <property name="name" value="cassandra"/>
-    <property name="version" value="0.1.0"/>
-    <property name="final.name" value="${name}-${version}"/>
-    <property name="year" value="2008"/>
+  <property name="Name" value="Cassandra"/>
+  <property name="name" value="cassandra"/>
+  <property name="version" value="0.1.0"/>
+  <property name="final.name" value="${name}-${version}"/>
+  <property name="year" value="2008"/>
 
-    <property name="src.dir" value="${basedir}/src"/>
-    <property name="lib.dir" value="${basedir}/lib"/>
-    <property name="conf.dir" value="${basedir}/conf"/>
-    <property name="docs.dir" value="${basedir}/docs"/>
-    <property name="interface.dir" value="${basedir}/interface"/>
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="conf.dir" value="${basedir}/conf"/>
+  <property name="docs.dir" value="${basedir}/docs"/>
+  <property name="interface.dir" value="${basedir}/interface"/>
 
-    <property name="build.dir" value="${basedir}/build"/>
-    <property name="build.classes" value="${build.dir}/classes"/>
-    <property name="build.docs" value="${build.dir}/docs"/>
-    <property name="build.javadoc" value="${build.docs}/api"/>
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="build.classes" value="${build.dir}/classes"/>
+  <property name="build.docs" value="${build.dir}/docs"/>
+  <property name="build.javadoc" value="${build.docs}/api"/>
 
-    <property name="javadoc.link.java"
-              value="http://java.sun.com/javase/6/docs/api/"/>
+  <property name="dist.dir" value="${build.dir}/${final.name}"/>
 
-    <property name="javac.debug" value="on"/>    
-    <property name="javac.debuglevel" value="source,lines,vars"/>
+  <property name="javadoc.link.java"
+            value="http://java.sun.com/javase/6/docs/api/"/>
 
-    <!-- =========================================== -->
-    <!--                   CLASSPATHS                -->
-    <!-- =========================================== -->
+  <property name="javac.debug" value="on"/>    
+  <property name="javac.debuglevel" value="source,lines,vars"/>
 
-    <!-- the normal classpath includes the lib/ and conf/ dirs -->
-    <path id="classpath">
-        <pathelement location="${build.classes}"/>
-        <fileset dir="${lib.dir}">
-            <include name="**/*.jar" />
-            <exclude name="**/excluded/" />
-        </fileset>
-        <pathelement location="${conf.dir}"/>
-    </path>
+  <!-- =========================================== -->
+  <!--                   CLASSPATHS                -->
+  <!-- =========================================== -->
+
+  <!-- the normal classpath includes the lib/ and conf/ dirs -->
+  <path id="classpath">
+    <pathelement location="${build.classes}"/>
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar" />
+      <exclude name="**/excluded/" />
+    </fileset>
+    <pathelement location="${conf.dir}"/>
+  </path>
+
+  <!-- ========================================== -->
+  <!--                    MACROS                  -->
+  <!-- ========================================== -->
+  <macrodef name="macro_tar" description="Worker Macro for tar">
+    <attribute name="param.destfile"/>
+    <element name="param.listofitems"/>
+    <sequential>
+      <tar compression="gzip" longfile="gnu"
+      destfile="@{param.destfile}">
+      <param.listofitems/>
+      </tar>
+    </sequential>
+  </macrodef>
 
 
-    <!-- =========================================== -->
-    <!--                 BUILD TARGETS               -->
-    <!-- =========================================== -->
+  <!-- =========================================== -->
+  <!--                 BUILD TARGETS               -->
+  <!-- =========================================== -->
 
-    <target name="init" description="Create the directories needed to build Cassandra">
-        <mkdir dir="${build.classes}"/>
-    </target>
+  <target name="init" description="Create the directories needed to build Cassandra">
+    <mkdir dir="${build.classes}"/>
+  </target>
 
-    <target name="clean" description="Delete the build files and their directories">
-        <delete file="${build.dir}/${final.name}.jar"/>
-        <delete dir="${build.classes}"/>
-    </target>
+  <target name="clean" description="Delete the build files and their directories">
+    <delete file="${build.dir}/${final.name}.jar"/>
+    <delete dir="${build.classes}"/>
+  </target>
 
-    <target name="javadoc" description="Generate javadoc">
-      <mkdir dir="${build.javadoc}"/>
-      <javadoc 
-       packagenames="com.facebook.infrastructure.*"
-       destdir="${build.javadoc}"
-       author="true"
-       version="true"
-       use="true"
-       windowtitle="${Name} ${version} API"
-       doctitle="${Name} ${version} API"
-      >
-        <packageset dir="${src.dir}"/>
-        <link href="${javadoc.link.java}"/>
+  <target name="javadoc" description="Generate javadoc">
+    <mkdir dir="${build.javadoc}"/>
+    <javadoc 
+     packagenames="com.facebook.infrastructure.*"
+     destdir="${build.javadoc}"
+     author="true"
+     version="true"
+     use="true"
+     windowtitle="${Name} ${version} API"
+     doctitle="${Name} ${version} API"
+    >
+      <packageset dir="${src.dir}"/>
+      <link href="${javadoc.link.java}"/>
 
-        <classpath >
-          <path refid="classpath" />
-          <pathelement path="${java.class.path}"/>
-        </classpath>
-      </javadoc>
-    </target>	
+      <classpath >
+        <path refid="classpath" />
+        <pathelement path="${java.class.path}"/>
+      </classpath>
+    </javadoc>
+  </target>	
 
-    <target name="compile" depends="init" description="Build the Cassandra classes">
-        <javac
-         debug="${javac.debug}"
-         debuglevel="${javac.debuglevel}"
-         destdir="${build.classes}"
-         srcdir="${src.dir}">
-         <classpath refid="classpath"/>
-        </javac>
-    </target>
+  <target name="compile" depends="init" description="Build the Cassandra classes">
+    <javac
+     debug="${javac.debug}"
+     debuglevel="${javac.debuglevel}"
+     destdir="${build.classes}"
+     srcdir="${src.dir}"
+    >
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
 
-    <target name="jar" depends="compile" description="Make the Cassandra jarfile">
+  <target name="jar" depends="compile" description="Make the Cassandra jarfile">
     <jar jarfile="${build.dir}/${final.name}.jar"
          basedir="${build.classes}">
       <manifest>
@@ -118,10 +135,86 @@
           <attribute name="Implementation-Title" value="Cassandra"/>
           <attribute name="Implementation-Version" value="${version}"/>
           <attribute name="Implementation-Vendor" value="Facebook"/>
-	  <attribute name="Premain-Class" value="com.facebook.infrastructure.continuations.ContinuationAgent"/>
+          <attribute name="Premain-Class" value="com.facebook.infrastructure.continuations.ContinuationAgent"/>
         </section>
       </manifest>
     </jar>
-    </target>
+  </target>
+
+  <target name="package" depends="compile, jar, javadoc"
+	  description="Build distribution">
+    <mkdir dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}/lib"/>
+    <mkdir dir="${dist.dir}/interface"/>
+    <mkdir dir="${dist.dir}/bin"/>
+    <mkdir dir="${dist.dir}/docs"/>
+    <mkdir dir="${dist.dir}/docs/api"/>
+
+    <copy todir="${dist.dir}/lib" includeEmptyDirs="false">
+      <fileset dir="${lib.dir}"/>
+    </copy>
+    <copy todir="${dist.dir}"> 
+      <fileset file="${build.dir}/${final.name}.jar"/>
+    </copy>
+    
+    <copy todir="${dist.dir}/bin">
+      <fileset dir="bin"/>
+    </copy>
+
+    <copy todir="${dist.dir}/conf">
+      <fileset dir="${conf.dir}"/>
+    </copy>
+
+    <copy todir="${dist.dir}/docs">
+      <fileset dir="${docs.dir}" />
+      <fileset dir="${build.docs}"/>
+    </copy>
+
+    <copy todir="${dist.dir}">
+      <fileset dir=".">
+        <include name="*.txt" />
+      </fileset>
+    </copy>
+
+    <copy todir="${dist.dir}/src" includeEmptyDirs="true">
+      <fileset dir="src"/>
+    </copy>
+  	
+    <copy todir="${dist.dir}/" file="build.xml"/>
+
+    <chmod perm="ugo+x" type="file" parallel="false">
+        <fileset dir="${dist.dir}/bin"/>
+    </chmod>
+  </target>
+
+  <target name="tar" depends="package" description="Make release tarball">
+    <macro_tar param.destfile="${build.dir}/${final.name}.tar.gz">
+      <param.listofitems>
+        <tarfileset dir="${build.dir}" mode="664">
+          <exclude name="${final.name}/bin/*" />
+          <include name="${final.name}/**" />
+        </tarfileset>
+        <tarfileset dir="${build.dir}" mode="755">
+          <include name="${final.name}/bin/*" />
+        </tarfileset>
+      </param.listofitems>
+    </macro_tar>
+  </target>
+
+  <target name="binary" depends="package" description="Make tarball without source and documentation">
+    <macro_tar param.destfile="${build.dir}/${final.name}-bin.tar.gz">
+      <param.listofitems>
+        <tarfileset dir="${build.dir}" mode="664">
+          <exclude name="${final.name}/bin/*" />
+          <exclude name="${final.name}/src/**" />
+          <exclude name="${final.name}/docs/**" />
+          <include name="${final.name}/**" />
+        </tarfileset>
+        <tarfileset dir="${build.dir}" mode="755">
+          <include name="${final.name}/bin/*" />
+        </tarfileset>
+      </param.listofitems>
+    </macro_tar>
+  </target>
 
 </project>
