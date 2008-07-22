@@ -1364,7 +1364,7 @@ public class ColumnFamilyStore
 	            BloomFilter compactedRangeBloomFilter = new BloomFilter(expectedBloomFilterSize, 8);
 	            List<ColumnFamily> columnFamilies = new ArrayList<ColumnFamily>();
 
-	            while (!pq.isEmpty() || lfs.isEmpty())
+	            while (!pq.isEmpty() || !lfs.isEmpty())
 	            {
 	                FileStruct fs = null;
 	                if (!pq.isEmpty())
