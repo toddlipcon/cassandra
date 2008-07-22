@@ -315,12 +315,10 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
     private int averageSystemLoad()
     {
         int nodeCount = loadInfo2_.size();
-        Set<EndPoint> nodes = loadInfo2_.keySet();
 
         int systemLoad = 0;
-        for ( EndPoint node : nodes )
+        for ( LoadInfo load : loadInfo2_.values() )
         {
-            LoadInfo load = loadInfo2_.get(node);
             if ( load != null )
                 systemLoad += load.count();
         }
@@ -387,17 +385,17 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
     private EndPoint findARandomLightNode()
     {
         List<EndPoint> potentialCandidates = new ArrayList<EndPoint>();
-        Set<EndPoint> allTargets = loadInfo2_.keySet();
+
         int avgLoad =  averageSystemLoad();
 
-        for( EndPoint target : allTargets )
+        for( Map.Entry<EndPoint, LoadInfo> entry : loadInfo2_.entrySet() )
         {
-            LoadInfo load = loadInfo2_.get(target);
+            LoadInfo load = entry.getValue();
             if ( load.count() < avgLoad )
-                potentialCandidates.add(target);
+                potentialCandidates.add(entry.getKey());
         }
 
-        if ( potentialCandidates.size() > 0 )
+        if ( !potentialCandidates.isEmpty() )
         {
             Random random = new Random();
             int index = random.nextInt(potentialCandidates.size());

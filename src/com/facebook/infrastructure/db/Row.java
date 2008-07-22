@@ -107,16 +107,16 @@ public class Row implements Serializable
     void merge(Row row)
     {
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        Set<String> cfNames = columnFamilies.keySet();
 
-        for ( String cfName : cfNames )
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
+            String cfName = entry.getKey();
             ColumnFamily cf = columnFamilies_.get(cfName);
             if ( cf == null )
-                columnFamilies_.put(cfName, columnFamilies.get(cfName));
+                columnFamilies_.put(cfName, entry.getValue());
             else
             {
-                cf.merge(columnFamilies.get(cfName));
+                cf.merge(entry.getValue());
             }
         }
     }
@@ -129,17 +129,18 @@ public class Row implements Serializable
     public void repair(Row row)
     {
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        Set<String> cfNames = columnFamilies.keySet();
 
-        for ( String cfName : cfNames )
+        
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
+            String cfName = entry.getKey();
             ColumnFamily cf = columnFamilies_.get(cfName);
             if ( cf == null )
             {
             	cf = new ColumnFamily(cfName);
                 columnFamilies_.put(cfName, cf);
             }
-            cf.repair(columnFamilies.get(cfName));
+            cf.repair(entry.getValue());
         }
 
     }
@@ -157,17 +158,17 @@ public class Row implements Serializable
     {
         Row rowDiff = new Row(key_);
     	Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        Set<String> cfNames = columnFamilies.keySet();
 
-        for ( String cfName : cfNames )
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
+            String cfName = entry.getKey();
             ColumnFamily cf = columnFamilies_.get(cfName);
             ColumnFamily cfDiff = null;
             if ( cf == null )
-            	rowDiff.getColumnFamilies().put(cfName, columnFamilies.get(cfName));
+            	rowDiff.getColumnFamilies().put(cfName, entry.getValue());
             else
             {
-            	cfDiff = cf.diff(columnFamilies.get(cfName));
+            	cfDiff = cf.diff(entry.getValue());
             	if(cfDiff != null)
             		rowDiff.getColumnFamilies().put(cfName, cfDiff);
             }
@@ -191,15 +192,18 @@ public class Row implements Serializable
     	Set<String> cfamilies = columnFamilies_.keySet();
     	byte[] xorHash = new byte[0];
     	byte[] tmpHash = new byte[0];
-    	for(String cFamily : cfamilies)
+
+        for (Map.Entry<String, ColumnFamily> entry : columnFamilies_.entrySet() )
     	{
+            String cFamily = entry.getKey();
+
     		if(xorHash.length == 0)
     		{
-    			xorHash = columnFamilies_.get(cFamily).digest();
+    			xorHash = entry.getValue().digest();
     		}
     		else
     		{
-    			tmpHash = columnFamilies_.get(cFamily).digest();
+    			tmpHash = entry.getValue().digest();
     			xorHash = CassandraUtilities.xor(xorHash, tmpHash);
     		}
     	}
@@ -225,10 +229,9 @@ class RowSerializer implements ICompactSerializer<Row>
 
         if ( size > 0 )
         {
-        	Set<String> cNames = columnFamilies.keySet();
-            for ( String cName : cNames )
+            for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
             {
-                ColumnFamily.serializer().serialize(columnFamilies.get(cName), dos);
+                ColumnFamily.serializer().serialize(entry.getValue(), dos);
             }
         }
     }

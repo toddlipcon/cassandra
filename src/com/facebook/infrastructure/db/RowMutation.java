@@ -64,11 +64,11 @@ public class RowMutation implements Serializable
     {
         table_ = table;
         key_ = row.key();
-        Map<String, ColumnFamily> cfSet = row.getColumnFamilies();
-        Set<String> keyset = cfSet.keySet();
-        for(String cfName : keyset)
+        Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
+
+        for ( Map.Entry<String, ColumnFamily> entry : cfMap.entrySet() )
         {
-        	add(cfName, cfSet.get(cfName));
+        	add(entry.getKey(), entry.getValue());
         }
     }
 
@@ -205,23 +205,25 @@ public class RowMutation implements Serializable
     {
         Row row = new Row(key_);
         Table table = Table.open(table_);
-        Set<String> cfNames = modifications_.keySet();
-        for (String cfName : cfNames )
+
+        for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
         {
+            String cfName = entry.getKey();
             if ( !table.isValidColumnFamily(cfName) )
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( modifications_.get(cfName) );
+            row.addColumnFamily( entry.getValue() );
         }
         table.apply(row);
 
-        Set<String> cfNames2 = deletions_.keySet();
-        for (String cfName : cfNames2 )
+
+        for ( Map.Entry<String, ColumnFamily> entry : deletions_.entrySet() )
         {
+            String cfName = entry.getKey();
             if ( !table.isValidColumnFamily(cfName) )
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( deletions_.get(cfName) );
+            row.addColumnFamily( entry.getValue() );
         }
-        if ( deletions_.size() > 0 )
+        if ( !deletions_.isEmpty() )
             table.delete(row);
     }
 
@@ -232,23 +234,24 @@ public class RowMutation implements Serializable
     void apply(Row row) throws IOException, ColumnFamilyNotDefinedException
     {
         Table table = Table.open(table_);
-        Set<String> cfNames = modifications_.keySet();
-        for (String cfName : cfNames )
+
+        for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
         {
+            String cfName = entry.getKey();
             if ( !table.isValidColumnFamily(cfName) )
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( modifications_.get(cfName) );
+            row.addColumnFamily( entry.getValue() );
         }
         table.apply(row);
 
-        Set<String> cfNames2 = deletions_.keySet();
-        for (String cfName : cfNames2 )
+        for ( Map.Entry<String, ColumnFamily> entry : deletions_.entrySet() )
         {
+            String cfName = entry.getKey();
             if ( !table.isValidColumnFamily(cfName) )
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( deletions_.get(cfName) );
+            row.addColumnFamily( entry.getValue() );
         }
-        if ( deletions_.size() > 0 )
+        if ( !deletions_.isEmpty() )
             table.delete(row);
     }
 
@@ -259,12 +262,13 @@ public class RowMutation implements Serializable
     void load(Row row) throws IOException, ColumnFamilyNotDefinedException
     {
         Table table = Table.open(table_);
-        Set<String> cfNames = modifications_.keySet();
-        for (String cfName : cfNames )
+
+        for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
         {
+            String cfName = entry.getKey();
             if ( !table.isValidColumnFamily(cfName) )
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( modifications_.get(cfName) );
+            row.addColumnFamily( entry.getValue() );
         }
         table.load(row);
     }
@@ -278,11 +282,10 @@ class RowMutationSerializer implements ICompactSerializer<RowMutation>
         dos.writeInt(size);
         if ( size > 0 )
         {
-            Set<String> keys = map.keySet();
-            for( String key : keys )
+            for ( Map.Entry<String, ColumnFamily> entry : map.entrySet() )
             {
-            	dos.writeUTF(key);
-                ColumnFamily cf = map.get(key);
+            	dos.writeUTF( entry.getKey() );
+                ColumnFamily cf = entry.getValue();
                 if ( cf != null )
                 {
                     ColumnFamily.serializer().serialize(cf, dos);

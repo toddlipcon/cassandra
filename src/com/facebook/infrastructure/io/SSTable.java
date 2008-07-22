@@ -281,12 +281,11 @@ public class SSTable
     */
     public static List<String> getIndexedKeys()
     {
-        Set<String> indexFiles = indexMetadataMap_.keySet();
         List<KeyPositionInfo> keyPositionInfos = new ArrayList<KeyPositionInfo>();
 
-        for ( String indexFile : indexFiles )
+        for ( List<KeyPositionInfo> infos : indexMetadataMap_.values() )
         {
-            keyPositionInfos.addAll( indexMetadataMap_.get(indexFile) );
+            keyPositionInfos.addAll( infos );
         }
 
         List<String> indexedKeys = new ArrayList<String>();
@@ -591,14 +590,13 @@ public class SSTable
     private void dumpBlockIndex() throws IOException
     {
         DataOutputBuffer bufOut = new DataOutputBuffer();
-        Set<String> keys = blockIndex_.keySet();        
         
         /* Number of keys in this block */
-        bufOut.writeInt(keys.size());
-        for ( String key : keys )
+        bufOut.writeInt(blockIndex_.size());
+        for ( Map.Entry<String, BlockMetadata> entry : blockIndex_.entrySet() )
         {            
-            bufOut.writeUTF(key);
-            BlockMetadata blockMetadata = blockIndex_.get(key);
+            bufOut.writeUTF(entry.getKey());
+            BlockMetadata blockMetadata = entry.getValue();
             bufOut.writeLong(blockMetadata.position_);
             bufOut.writeLong(blockMetadata.size_);
         }

@@ -78,10 +78,8 @@ public class StageManager
      */
     public static void shutdown()
     {
-        Set<String> stages = stageQueues_.keySet();
-        for ( String stage : stages )
+        for ( IStage registeredStage : stageQueues_.values() )
         {
-            IStage registeredStage = stageQueues_.get(stage);
             registeredStage.shutdown();
         }
     }

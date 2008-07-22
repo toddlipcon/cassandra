@@ -578,11 +578,11 @@ public class ColumnFamilyStore
 	            {
 	                /* suppress columns marked for delete */
 	                Map<String, IColumn> columns = columnFamily.getColumns();
-	                Set<String> cNames = columns.keySet();
 
-	                for (String cName : cNames)
-	                {
-	                    IColumn column = columns.get(cName);
+                    for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
+                    {
+                        String cName = entry.getKey();
+                        IColumn column = entry.getValue();
 	                    if (column.isMarkedForDelete())
 	                        columns.remove(cName);
 	                }
@@ -861,10 +861,9 @@ public class ColumnFamilyStore
         {
 	        int count = 0;
 	    	Map<Integer, List<String>> buckets = stageCompaction(files);
-	    	Set<Integer> keySet = buckets.keySet();
-	    	for(Integer key : keySet)
-	    	{
-	    		List<String> fileList = buckets.get(key);
+
+            for ( List<String> fileList : buckets.values() )
+            {
 	            BloomFilter.CountingBloomFilter tempResult = null;
 	    		// If ranges != null we should split the files irrespective of the threshold.
 	    		if(fileList.size() >= threshHold_ || ranges != null)

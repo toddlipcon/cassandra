@@ -82,10 +82,11 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		Map<EndPoint, Message> messageMap = new HashMap<EndPoint, Message>();
 		Message message = RowMutationMessage.makeRowMutationMessage(rmMessage);
 
-		Set<EndPoint> targets = endpointMap.keySet();
-		for( EndPoint target : targets )
-		{
-			EndPoint hint = endpointMap.get(target);
+        for ( Map.Entry<EndPoint, EndPoint> entry : endpointMap.entrySet() )
+        {
+            EndPoint target = entry.getKey();
+            EndPoint hint = entry.getValue();
+
 			if ( !target.equals(hint) )
 			{
 				Message hintedMessage = RowMutationMessage.makeRowMutationMessage(rmMessage);
@@ -118,10 +119,12 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			RowMutationMessage rmMsg = new RowMutationMessage(rm);
 			/* Create the write messages to be sent */
 			Map<EndPoint, Message> messageMap = createWriteMessages(rmMsg, endpointMap);
-			Set<EndPoint> endpoints = messageMap.keySet();
-			for(EndPoint endpoint : endpoints)
-			{
-				MessagingService.getMessagingInstance().sendOneWay(messageMap.get(endpoint), endpoint);
+
+            for ( Map.Entry<EndPoint, Message> entry : messageMap.entrySet() )
+            {
+                EndPoint endpoint = entry.getKey();
+
+				MessagingService.getMessagingInstance().sendOneWay(entry.getValue(), endpoint);
 			}
 		}
 		catch (Exception e)
@@ -687,17 +690,16 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
-			Set<String> keys = batchMutation.cfmap.keySet();
-			Iterator<String> keyIter = keys.iterator();
-			while (keyIter.hasNext())
-			{
-				Object key = keyIter.next(); // Get the next key.
-				List<column_t> list = batchMutation.cfmap.get(key);
+
+            for ( Map.Entry<String, ArrayList<column_t>> entry : batchMutation.cfmap.entrySet() )
+            {
+                String key = entry.getKey();
+                List<column_t> list = entry.getValue();
+
 				for (column_t columnData : list)
 				{
-					rm.add(key.toString() + ":" + columnData.columnName,
+					rm.add(key + ":" + columnData.columnName,
 							columnData.value.getBytes(), columnData.timestamp);
-
 				}
 			}
 
@@ -738,15 +740,14 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
-			Set<String> keys = batchMutation.cfmap.keySet();
-			Iterator<String> keyIter = keys.iterator();
-			while (keyIter.hasNext())
-			{
-				Object key = keyIter.next(); // Get the next key.
-				List<column_t> list = batchMutation.cfmap.get(key);
+
+            for ( Map.Entry<String, ArrayList<column_t>> entry : batchMutation.cfmap.entrySet() )
+            {
+                String key = entry.getKey();
+				List<column_t> list = entry.getValue();
 				for (column_t columnData : list)
 				{
-					rm.add(key.toString() + ":" + columnData.columnName,
+					rm.add(key + ":" + columnData.columnName,
 							columnData.value.getBytes(), columnData.timestamp);
 
 				}
@@ -928,25 +929,24 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
-			Set<String> keys = batchMutationSuper.cfmap.keySet();
-			Iterator<String> keyIter = keys.iterator();
-			while (keyIter.hasNext())
-			{
-				Object key = keyIter.next(); // Get the next key.
-				List<superColumn_t> list = batchMutationSuper.cfmap.get(key);
+
+            for ( Map.Entry<String, ArrayList<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
+            {
+                String key = entry.getKey();
+				List<superColumn_t> list = entry.getValue();
 				for (superColumn_t superColumnData : list)
 				{
-					if(superColumnData.columns.size() != 0 )
+					if (!superColumnData.columns.isEmpty() )
 					{
 						for (column_t columnData : superColumnData.columns)
 						{
-							rm.add(key.toString() + ":" + superColumnData.name  +":" + columnData.columnName,
+							rm.add(key + ":" + superColumnData.name  +":" + columnData.columnName,
 									columnData.value.getBytes(), columnData.timestamp);
 						}
 					}
 					else
 					{
-						rm.add(key.toString() + ":" + superColumnData.name, new byte[0], 0);
+						rm.add(key + ":" + superColumnData.name, new byte[0], 0);
 					}
 				}
 			}
@@ -967,25 +967,24 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
-			Set<String> keys = batchMutationSuper.cfmap.keySet();
-			Iterator<String> keyIter = keys.iterator();
-			while (keyIter.hasNext())
-			{
-				Object key = keyIter.next(); // Get the next key.
-				List<superColumn_t> list = batchMutationSuper.cfmap.get(key);
+
+            for ( Map.Entry<String, ArrayList<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
+            {
+                String key = entry.getKey();
+				List<superColumn_t> list = entry.getValue();
 				for (superColumn_t superColumnData : list)
 				{
-					if(superColumnData.columns.size() != 0 )
+					if ( !superColumnData.columns.isEmpty() )
 					{
 						for (column_t columnData : superColumnData.columns)
 						{
-							rm.add(key.toString() + ":" + superColumnData.name  +":" + columnData.columnName,
+							rm.add(key + ":" + superColumnData.name  +":" + columnData.columnName,
 									columnData.value.getBytes(), columnData.timestamp);
 						}
 					}
 					else
 					{
-						rm.add(key.toString() + ":" + superColumnData.name, new byte[0], 0);
+						rm.add(key + ":" + superColumnData.name, new byte[0], 0);
 					}
 				}
 			}

@@ -365,11 +365,11 @@ class CommitLog
                         Row row = Row.serializer().deserialize(bufIn);
                         Map<String, ColumnFamily> columnFamilies = new HashMap<String, ColumnFamily>(row.getColumnFamilies());
                         /* remove column families that have already been flushed */
-                    	Set<String> cNames = columnFamilies.keySet();
 
-                        for ( String cName : cNames )
+                        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
                         {
-                        	ColumnFamily columnFamily = columnFamilies.get(cName);
+                            String cName = entry.getKey();
+                        	ColumnFamily columnFamily = entry.getValue();
                         	/* TODO: Remove this to not process Hints */
                         	if ( !DatabaseDescriptor.isApplicationColumnFamily(cName) )
                         	{
@@ -412,10 +412,9 @@ class CommitLog
     {
     	Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
         Table table = Table.open(table_);
-        Set<String> cNames = columnFamilies.keySet();
-        for ( String cName : cNames )
+
+        for ( ColumnFamily columnFamily : columnFamilies.values() )
         {
-        	ColumnFamily columnFamily = columnFamilies.get(cName);
         	int id = table.getColumnFamilyId(columnFamily.name());
         	if ( clHeader_.get(id) == 0 || ( clHeader_.get(id) == 1 && clHeader_.getPosition(id) == 0 ) )
         	{

@@ -223,12 +223,12 @@ public class Table
         {
             int size = tmetadata.cfIdMap_.size();
             dos.writeInt(size);
-            Set<String> cfNames = tmetadata.cfIdMap_.keySet();
 
-            for ( String cfName : cfNames )
+            for ( Map.Entry<String, Integer> entry : tmetadata.cfIdMap_.entrySet() )
             {
+                String cfName = entry.getKey();
                 dos.writeUTF(cfName);
-                dos.writeInt( tmetadata.cfIdMap_.get(cfName).intValue() );
+                dos.writeInt( entry.getValue().intValue() );
                 dos.writeUTF(tmetadata.getColumnFamilyType(cfName));
             }            
         }
@@ -493,10 +493,9 @@ public class Table
         sb.append(newLineSeparator);
         int oldLength = sb.toString().length();
         
-        Set<String> cfNames = columnFamilyStores_.keySet();
-        for ( String cfName : cfNames )
+        for ( Map.Entry<String, ColumnFamilyStore> entry : columnFamilyStores_.entrySet() )
         {
-            ColumnFamilyStore cfStore = columnFamilyStores_.get(cfName);
+            ColumnFamilyStore cfStore = entry.getValue();
             sb.append(cfStore.cfStats(newLineSeparator, df));
         }
         int newLength = sb.toString().length();
@@ -779,10 +778,10 @@ public class Table
                
         CommitLog.CommitLogContext cLogCtx = CommitLog.open(table_).add(row);
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        Set<String> cNames = columnFamilies.keySet();
-        for ( String cName : cNames )
+
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
-        	ColumnFamily columnFamily = columnFamilies.get(cName);
+        	ColumnFamily columnFamily = entry.getValue();
             ColumnFamilyStore cfStore = columnFamilyStores_.get(columnFamily.name());
             cfStore.apply( key, columnFamily, cLogCtx);            
         }
@@ -796,10 +795,9 @@ public class Table
         String key = row.key();
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
 
-        Set<String> cNames = columnFamilies.keySet();
-        for ( String cName : cNames )
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
-            ColumnFamily columnFamily = columnFamilies.get(cName);
+        	ColumnFamily columnFamily = entry.getValue();
             ColumnFamilyStore cfStore = columnFamilyStores_.get(columnFamily.name());
             cfStore.applyNow( key, columnFamily );
         }
@@ -807,10 +805,9 @@ public class Table
 
     public void flush(boolean fRecovery) throws IOException
     {
-        Set<String> cfNames = columnFamilyStores_.keySet();
-        for ( String cfName : cfNames )
+        for ( Map.Entry<String, ColumnFamilyStore> entry : columnFamilyStores_.entrySet() )
         {
-            columnFamilyStores_.get(cfName).forceFlush(fRecovery);
+            entry.getValue().forceFlush(fRecovery);
         }
     }
 
@@ -821,11 +818,10 @@ public class Table
 
         /* Add row to commit log */
         CommitLog.open(table_).add(row);
-        Set<String> cNames = columnFamilies.keySet();
 
-        for ( String cName : cNames )
+        for ( Map.Entry<String, ColumnFamily> entry : columnFamilies.entrySet() )
         {
-        	ColumnFamily columnFamily = columnFamilies.get(cName);
+        	ColumnFamily columnFamily = entry.getValue();
             ColumnFamilyStore cfStore = columnFamilyStores_.get(columnFamily.name());
             cfStore.delete( key, columnFamily );
         }
@@ -838,34 +834,30 @@ public class Table
         long start = System.currentTimeMillis();
                 
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        Set<String> cNames = columnFamilies.keySet();
-        for ( String cName : cNames )
-        {
-        	if( cName.equals(Table.recycleBin_))
-        	{
-	        	ColumnFamily columnFamily = columnFamilies.get(cName);
-	        	Collection<IColumn> columns = columnFamily.getAllColumns();
-        		for(IColumn column : columns)
-        		{
-    	            ColumnFamilyStore cfStore = columnFamilyStores_.get(column.name());
-    	            if(column.timestamp() == 1)
-    	            {
-    	            	cfStore.forceFlushBinary();
-    	            }
-    	            else if(column.timestamp() == 2)
-    	            {
-    	            	cfStore.forceCompaction(null, null, BasicUtilities.byteArrayToLong(column.value()), null);
-    	            }
-    	            else if(column.timestamp() == 3)
-    	            {
-    	            	cfStore.forceFlush(false);
-    	            }
-    	            else
-    	            {
-    	            	cfStore.applyBinary(key, column.value());
-    	            }
-        		}
-        	}
+        ColumnFamily columnFamily = columnFamilies.get(Table.recycleBin_);
+        // TODO should this ever be null?
+        if (columnFamily != null) {
+            Collection<IColumn> columns = columnFamily.getAllColumns();
+            for(IColumn column : columns)
+            {
+                ColumnFamilyStore cfStore = columnFamilyStores_.get(column.name());
+                if(column.timestamp() == 1)
+                {
+                    cfStore.forceFlushBinary();
+                }
+                else if(column.timestamp() == 2)
+                {
+                    cfStore.forceCompaction(null, null, BasicUtilities.byteArrayToLong(column.value()), null);
+                }
+                else if(column.timestamp() == 3)
+                {
+                    cfStore.forceFlush(false);
+                }
+                else
+                {
+                    cfStore.applyBinary(key, column.value());
+                }
+            }
         }
         row.clear();
         long timeTaken = System.currentTimeMillis() - start;

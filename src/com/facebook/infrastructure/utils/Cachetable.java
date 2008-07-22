@@ -90,10 +90,10 @@ public class Cachetable<K,V> implements ICachetable<K,V>
             }
             
             /* Calling the hooks on the keys that have been expunged */
-            Set<K> keys = expungedValues.keySet();                                               
-            for ( K key : keys )
-            {                                
-                V value = expungedValues.get(key);
+            for ( Map.Entry<K, V> entry : expungedValues.entrySet() )
+            {
+                K key = entry.getKey();
+                V value = entry.getValue();
                 ICacheExpungeHook<K,V> hook = hooks_.remove(key);
                 try 
                 {

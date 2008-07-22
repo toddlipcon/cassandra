@@ -162,13 +162,12 @@ public class TokenMetadata
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        Set<EndPoint> eps = endPointToTokenMap_.keySet();
 
-        for ( EndPoint ep : eps )
+        for ( Map.Entry<EndPoint, BigInteger> entry : endPointToTokenMap_.entrySet() )
         {
-            sb.append(ep);
+            sb.append(entry.getKey());
             sb.append(":");
-            sb.append(endPointToTokenMap_.get(ep));
+            sb.append(entry.getValue());
             sb.append(System.getProperty("line.separator"));
         }
 

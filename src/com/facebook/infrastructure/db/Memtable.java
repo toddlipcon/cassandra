@@ -49,10 +49,9 @@ public class Memtable implements MemtableMBean
     public static final String flushKey_ = "FlushKey";
     public static void shutdown()
     {
-    	Set<String> names = apartments_.keySet();
-    	for (String name : names)
+        for ( ExecutorService apartment : apartments_.values() )
     	{
-    		apartments_.get(name).shutdownNow();
+    		apartment.shutdownNow();
     	}
     }
 

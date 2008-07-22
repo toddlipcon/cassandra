@@ -68,10 +68,11 @@ public class RecoveryManager
     private void recoverEachTable(Map<String, List<File>> tableToCommitLogs) throws IOException
     {
         Comparator<File> fCmp = new FileUtils.FileComparator();
-        Set<String> tables = tableToCommitLogs.keySet();
-        for ( String table : tables )
+
+        for ( Map.Entry<String, List<File>> entry : tableToCommitLogs.entrySet() )
         {
-            List<File> clogs = tableToCommitLogs.get(table);
+            String table = entry.getKey();
+            List<File> clogs = entry.getValue();
             Collections.sort(clogs, fCmp);
             CommitLog clog = new CommitLog(table, true);
             clog.recover(clogs);

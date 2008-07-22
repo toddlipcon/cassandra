@@ -185,12 +185,9 @@ public class DBManager
         {
             /* we crashed and came back up need to bump generation # */
         	Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();
-        	Set<String> cfNames = columnFamilies.keySet();
 
-            for ( String cfName : cfNames )
+            for ( ColumnFamily columnFamily : columnFamilies.values() )
             {
-            	ColumnFamily columnFamily = columnFamilies.get(cfName);
-
                 IColumn token = columnFamily.getColumn(SystemTable.token_);
                 BigInteger bi = new BigInteger( token.value() );
 

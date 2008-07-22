@@ -82,11 +82,8 @@ class EfficientBidiMap implements Serializable
     public SortedSet<IColumn> getSortedColumns()
     {
     	SortedSet<IColumn> columns =  new TreeSet<IColumn>(columnComparator_);
-        Set<String> keySet = map_.keySet();
-        for(String key: keySet)
-        {
-        	columns.add(map_.get(key));
-        }
+
+        columns.addAll(map_.values());
     	return columns;
     }
 

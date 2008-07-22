@@ -181,11 +181,9 @@ public final class ColumnFamily implements Serializable
     void addColumns(ColumnFamily cf)
     {
         Map<String, IColumn> columns = cf.getColumns();
-        Set<String> cNames = columns.keySet();
-
-        for ( String cName : cNames )
+        for ( Map.Entry<String, IColumn> entry : columns.entrySet())
         {
-        	addColumn(cName, columns.get(cName));
+            addColumn(entry.getKey(), entry.getValue());
         }
     }
 
@@ -300,11 +298,10 @@ public final class ColumnFamily implements Serializable
     void merge(ColumnFamily columnFamily)
     {
         Map<String, IColumn> columns = columnFamily.getColumns();
-        Set<String> cNames = columns.keySet();
 
-        for ( String cName : cNames )
+        for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
-            columns_.put(cName, columns.get(cName));
+            columns_.put(entry.getKey(), entry.getValue());
         }
     }
 
@@ -320,12 +317,12 @@ public final class ColumnFamily implements Serializable
     void repair(ColumnFamily columnFamily)
     {
         Map<String, IColumn> columns = columnFamily.getColumns();
-        Set<String> cNames = columns.keySet();
 
-        for ( String cName : cNames )
+        for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
+            String cName = entry.getKey();
         	IColumn columnInternal = columns_.get(cName);
-        	IColumn columnExternal = columns.get(cName);
+        	IColumn columnExternal = entry.getValue();
 
         	if( columnInternal == null )
         	{
@@ -354,12 +351,13 @@ public final class ColumnFamily implements Serializable
     {
     	ColumnFamily cfDiff = new ColumnFamily(columnFamily.name());
         Map<String, IColumn> columns = columnFamily.getColumns();
-        Set<String> cNames = columns.keySet();
 
-        for ( String cName : cNames )
+        for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
+            String cName = entry.getKey();
+
         	IColumn columnInternal = columns_.get(cName);
-        	IColumn columnExternal = columns.get(cName);
+        	IColumn columnExternal = entry.getValue();
         	if( columnInternal == null )
         	{
         		cfDiff.addColumn(cName, columnExternal);
@@ -383,10 +381,9 @@ public final class ColumnFamily implements Serializable
     {
         if ( size_.get() == 0 )
         {
-            Set<String> cNames = columns_.getColumns().keySet();
-            for ( String cName : cNames )
+            for ( Map.Entry<String, IColumn> entry : columns_.getColumns().entrySet() )
             {
-                size_.addAndGet(columns_.get(cName).size());
+                size_.addAndGet(entry.getValue().size());
             }
         }
         return size_.get();

@@ -870,11 +870,12 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
              * target and value is the list of ranges to be sent to it. 
             */
             Map<EndPoint, Map<EndPoint, List<Range>>> rangeInfo = new HashMap<EndPoint, Map<EndPoint, List<Range>>>();
-            Set<Range> ranges = rangesWithSourceTarget.keySet();
-            
-            for ( Range range : ranges )
+
+            for ( Map.Entry<Range, List<BootstrapSourceTarget>> entry : rangesWithSourceTarget.entrySet() )
             {
-                List<BootstrapSourceTarget> rangeSourceTargets = rangesWithSourceTarget.get(range);
+                Range range = entry.getKey();
+                List<BootstrapSourceTarget> rangeSourceTargets = entry.getValue();
+
                 for ( BootstrapSourceTarget rangeSourceTarget : rangeSourceTargets )
                 {
                     Map<EndPoint, List<Range>> targetRangeMap = rangeInfo.get(rangeSourceTarget.source_);
@@ -892,17 +893,21 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                     rangesToGive.add(range);
                 }
             }
-            
-            Set<EndPoint> sources = rangeInfo.keySet();
-            for ( EndPoint source : sources )
+
+
+            for ( Map.Entry<EndPoint, Map<EndPoint, List<Range>>> entry : rangeInfo.entrySet() )
             {
-                Map<EndPoint, List<Range>> targetRangesMap = rangeInfo.get(source);
-                Set<EndPoint> targets = targetRangesMap.keySet();
+                EndPoint source = entry.getKey();
+                Map<EndPoint, List<Range>> targetRangesMap = entry.getValue();
+
+
                 List<BootstrapMetadata> bsmdList = new ArrayList<BootstrapMetadata>();
                 
-                for ( EndPoint target : targets )
+                for ( Map.Entry<EndPoint, List<Range>> entry2 : targetRangesMap.entrySet() )
                 {
-                    List<Range> rangeForTarget = targetRangesMap.get(target);
+                    EndPoint target = entry2.getKey();
+                    List<Range> rangeForTarget = entry2.getValue();
+
                     BootstrapMetadata bsMetadata = new BootstrapMetadata(target, rangeForTarget);
                     bsmdList.add(bsMetadata);
                 }
@@ -1309,13 +1314,15 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         Range[] ranges = getAllRanges(tokens);
         Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(ranges);
 
-        Set<Range> rangeSet = oldRangeToEndPointMap.keySet();
-        for ( Range range : rangeSet )
+
+        for ( Map.Entry<Range, List<EndPoint>> entry : oldRangeToEndPointMap.entrySet() )
         {
+            Range range = entry.getKey();
+            List<EndPoint> replicas = entry.getValue();
+
             sb.append(range);
             sb.append(" : ");
 
-            List<EndPoint> replicas = oldRangeToEndPointMap.get(range);
             for ( EndPoint replica : replicas )
             {
                 sb.append(replica);
@@ -1418,11 +1425,11 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         List<double[]> equations = new ArrayList<double[]>();
         /* Get the endpoint to range map */
         Map<EndPoint, List<Range>> endPointToRangesMap = constructEndPointToRangesMap();
-        Set<EndPoint> eps = endPointToRangesMap.keySet();
-        
-        for ( EndPoint ep : eps )
+
+        for ( Map.Entry<EndPoint, List<Range>> entry : endPointToRangesMap.entrySet() )
         {
-            List<Range> ranges = endPointToRangesMap.get(ep);
+            EndPoint ep = entry.getKey();
+            List<Range> ranges = entry.getValue();
             double[] equation = new double[allRanges.length];
             for ( Range range : ranges )
             {                
@@ -1436,7 +1443,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         /* Get the constants which are the aggregate disk space for each endpoint */
         double[] constants = new double[allRanges.length];
         int index = 0;
-        for ( EndPoint ep : eps )
+        for ( EndPoint ep : endPointToRangesMap.keySet() )
         {
             /* reset the port back to control port */
             ep.setPort(DatabaseDescriptor.getControlPort());
@@ -1929,7 +1936,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         BigInteger token = hash(key);
         Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
         List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-        if (tokens.size() > 0)
+        if (!tokens.isEmpty())
         {
             Collections.sort(tokens);
             int index = Collections.binarySearch(tokens, token);
