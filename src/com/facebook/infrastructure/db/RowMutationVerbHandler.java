@@ -93,7 +93,7 @@ public class RowMutationVerbHandler implements IVerbHandler
             
             /*WriteResponseMessage writeResponseMessage = new WriteResponseMessage(rm.table(), rm.key(), true);
             Message response = message.getReply( StorageService.getLocalStorageEndPoint(), new Object[]{writeResponseMessage} );
-            logger_.debug("Sending teh response to " +  message.getFrom() + " for key :" + rm.key());
+            logger_.debug("Sending the response to " +  message.getFrom() + " for key :" + rm.key());
             MessagingService.getMessagingInstance().sendOneWay(response, message.getFrom());  */                    
         }         
         catch( ColumnFamilyNotDefinedException ex )

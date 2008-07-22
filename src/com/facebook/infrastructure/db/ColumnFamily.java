@@ -234,7 +234,7 @@ public final class ColumnFamily implements Serializable
 
     /*
      * If we find an old column that has the same name
-     * the ask it to resolve itself else add the new column .
+     * then ask it to resolve itself. Otherwise add the new column.
     */
     void addColumn(String name, IColumn column)
     {
@@ -309,11 +309,11 @@ public final class ColumnFamily implements Serializable
     }
 
     /*
-     * This function will repair a list of columns
+     * This function will repair a list of columns.
      * If there are any columns in the external list which are not present
-     * internally then they are added ( this might have to change depending on
+     * internally, then they are added ( this might have to change depending on
      * how we implement delete repairs).
-     * Also if there are any columns in teh internal and not in the external
+     * Also if there are any columns in the internal and not in the external
      * they are kept intact.
      * Else the one with the greatest timestamp is considered latest.
      */
@@ -346,8 +346,8 @@ public final class ColumnFamily implements Serializable
 
 
     /*
-     * This function will calculate the differnce between 2 column families
-     * the external input is considered the superset of internal
+     * This function will calculate the difference between 2 column families.
+     * The external input is considered the superset of internal
      * so there are no deletes in the diff.
      */
     ColumnFamily diff(ColumnFamily columnFamily)
@@ -507,7 +507,7 @@ class ColumnFamilySerializer implements ICompactSerializer2<ColumnFamily>
      * This method fills the Column Family object with the column information
      * from the DataInputStream. The "items" parameter tells us whether we need
      * all the columns or just a subset of all the Columns that make up the
-     * Column Family. If "items" is -1 then we need all the columns if not we
+     * Column Family. If "items" is -1 then we need all the columns. If not, we
      * deserialize only as many columns as indicated by the "items" parameter.
     */
     private void fillColumnFamily(ColumnFamily cf, int startPosition, int count, DataInputStream dis) throws IOException
@@ -561,7 +561,7 @@ class ColumnFamilySerializer implements ICompactSerializer2<ColumnFamily>
     }
 
     /*
-     * This version of deserialize is used when we need a specific set if columns for
+     * This version of deserialize is used when we need a specific set of columns for
      * a column family specified in the name cfName parameter.
     */
     public ColumnFamily deserialize(DataInputStream dis, List<String> columnNames) throws IOException
@@ -592,7 +592,7 @@ class ColumnFamilySerializer implements ICompactSerializer2<ColumnFamily>
     }
 
     /*
-     * Deserialize a particular column or super column or the entire columnfamily given a : seprated name
+     * Deserialize a particular column or super column or the entire columnfamily given a : seprated name.
      * name could be of the form cf:superColumn:column  or cf:column or cf
      */
     public ColumnFamily deserialize(DataInputStream dis, String name, int count) throws IOException

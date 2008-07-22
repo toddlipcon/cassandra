@@ -690,7 +690,7 @@ public class ColumnFamilyStore
     /*
      * Called after the Memtable flushes its in-memory data. This information is
      * cached in the ColumnFamilyStore. This is useful for reads because the
-     * ColumnFamilyStore first looks in the in-memory store and the into the
+     * ColumnFamilyStore first looks in the in-memory store and then into the
      * disk to find the key. If invoked during recoveryMode the
      * onMemtableFlush() need not be invoked.
      *
@@ -836,7 +836,7 @@ public class ColumnFamilyStore
     		}
 
     	}
-		// Put files greater than teh max in a separate bucket so that they are never compacted
+		// Put files greater than the max in a separate bucket so that they are never compacted
 		// but we need them in the buckets since for range compactions we need to split these files.
     	count++;
     	for(String file : largeFileList)
@@ -1048,8 +1048,8 @@ public class ColumnFamilyStore
     }    
     
     /*
-     * Read the next key from the data file , this fn will skip teh block index
-     * and read teh next available key into the filestruct that is passed.
+     * Read the next key from the data file , this fn will skip the block index
+     * and read the next available key into the filestruct that is passed.
      * If it cannot read or a end of file is reached it will return null.
      */
     FileStruct getNextKey(FileStruct filestruct) throws IOException

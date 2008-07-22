@@ -33,7 +33,7 @@ public interface IStage
     public String getName();
     
     /**
-     * This method is used to execute a peice of code on
+     * This method is used to execute a piece of code on
      * this stage. The idea is that the <i>run()</i> method
      * of this Runnable instance is invoked on a thread from a
      * thread pool that belongs to this stage.
@@ -42,7 +42,7 @@ public interface IStage
     public void execute(Runnable runnable);
     
     /**
-     * This method is used to execute a peice of code on
+     * This method is used to execute a piece of code on
      * this stage which returns a Future pointer. The idea
      * is that the <i>call()</i> method of this Runnable 
      * instance is invoked on a thread from a thread pool 

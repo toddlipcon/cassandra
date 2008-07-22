@@ -126,8 +126,8 @@ public class HintedHandOffManager implements IComponentShutdown
             logger_.debug("Started  hinted handoff " + columnFamilyStore_.columnFamily_);
 
             // 1. Scan through all the keys that we need to handoff
-            // 2. For each key read the list of recepients and send
-            // 3. Delete that recepient from the key if write was successful
+            // 2. For each key read the list of recipients and send
+            // 3. Delete that recipient from the key if write was successful
             // 4. If all writes were success for a given key we can even delete the key .
             // 5. Now force a flush
             // 6. Do major compaction to clean up all deletes etc.
@@ -150,7 +150,7 @@ public class HintedHandOffManager implements IComponentShutdown
             	{
                 	for(IColumn key : keys)
                 	{
-                		// Get all the endpoints for teh key
+                		// Get all the endpoints for the key
                 		Collection<IColumn> endpoints =  key.getSubColumns();
                 		allsuccess = true;
                 		if ( endpoints != null )
@@ -194,8 +194,8 @@ public class HintedHandOffManager implements IComponentShutdown
             logger_.debug("Started  hinted handoff for endPoint " + endPoint_.getHost());
 
             // 1. Scan through all the keys that we need to handoff
-            // 2. For each key read the list of recepients if teh endpoint matches send
-            // 3. Delete that recepient from the key if write was successful
+            // 2. For each key read the list of recipients. if the endpoint matches, send
+            // 3. Delete that recipient from the key if write was successful
 
             Table table =  Table.open(DatabaseDescriptor.getTables().get(0));
             ColumnFamily hintedColumnFamily = null;
@@ -210,7 +210,7 @@ public class HintedHandOffManager implements IComponentShutdown
             	{
                 	for(IColumn key : keys)
                 	{
-                		// Get all the endpoints for teh key
+                		// Get all the endpoints for the key
                 		Collection<IColumn> endpoints =  key.getSubColumns();
                 		if ( endpoints != null )
                 		{

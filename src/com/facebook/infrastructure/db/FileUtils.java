@@ -187,21 +187,21 @@ public class FileUtils
     
     public static double stringToFileSize(String value)
     {        
-        String[] peices = value.split(" ");
-        double d = Double.valueOf(peices[0]);
-        if ( peices[1].equals("TB") )
+        String[] pieces = value.split(" ");
+        double d = Double.valueOf(pieces[0]);
+        if ( pieces[1].equals("TB") )
         {
             d *= tb_;
         }
-        else if ( peices[1].equals("GB") )
+        else if ( pieces[1].equals("GB") )
         {
             d *= gb_;
         }
-        else if ( peices[1].equals("MB") )
+        else if ( pieces[1].equals("MB") )
         {
             d *= mb_;
         }
-        else if ( peices[1].equals("KB") )
+        else if ( pieces[1].equals("KB") )
         {
             d *= kb_;
         }

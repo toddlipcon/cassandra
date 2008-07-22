@@ -53,7 +53,7 @@ class ConsistencyManager implements Runnable
 		
 		public void response(Message msg)
 		{
-			logger_.debug("Received reponse : " + msg.toString());
+			logger_.debug("Received response : " + msg.toString());
 			responses_.add(msg);
 			if ( responses_.size() == ConsistencyManager.this.replicas_.size() )
 				handleDigestResponses();
@@ -62,7 +62,7 @@ class ConsistencyManager implements Runnable
 		private void handleDigestResponses()
 		{
 			DataInputBuffer bufIn = new DataInputBuffer();
-			logger_.debug("Handle Digest reponses");
+			logger_.debug("Handle Digest responses");
 			for( Message response : responses_ )
 			{
 				byte[] body = (byte[])response.getMessageBody()[0];            

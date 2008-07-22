@@ -145,8 +145,7 @@ public class Range implements Comparable<Range>
      */
     private boolean isWrapAround(Range range)
     {
-        boolean bVal = ( range.left_.subtract(range.right_).signum() > 0 ) ? true : false;
-        return bVal;
+        return ( range.left_.subtract(range.right_).signum() > 0 );
     }
     
     public int compareTo(Range rhs)
@@ -169,10 +168,7 @@ public class Range implements Comparable<Range>
         if ( !(o instanceof Range) )
             return false;
         Range rhs = (Range)o;
-        if ( left_.equals(rhs.left_) && right_.equals(rhs.right_) )
-            return true;
-        else
-            return false;
+        return ( left_.equals(rhs.left_) && right_.equals(rhs.right_) );
     }
     
     public int hashCode()

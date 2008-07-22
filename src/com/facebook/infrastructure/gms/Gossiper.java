@@ -200,7 +200,6 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
      * 
      * param @ endpoint end point that is convicted.
     */
-
     public void convict(EndPoint endpoint)
     {
         EndPointState epState = endPointStateMap_.get(endpoint);
@@ -228,7 +227,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
 
     /**
      * This method is part of IFailureDetectionEventListener interface. This is invoked
-     * by the Failure Detector when it suspects an end point.
+     * by the Failure Detector when it suspects an end point may have failed.
      * 
      * param @ endpoint end point that is suspected.
     */
@@ -414,7 +413,10 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
         return seeds_.contains(to);
     }
 
-    /* Sends a Gossip message to a live member and returns a reference to the member */
+    /**
+     * Sends a Gossip message to a live member and returns true if that member
+     * was also a seed
+     */
     boolean doGossipToLiveMember(Message message)
     {
         int size = liveEndpoints_.size();
@@ -505,7 +507,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
             /*
              * Here we try to include the Heart Beat state only if it is
              * greater than the version passed in. It might happen that
-             * the heart beat version maybe lesser than the version passed
+             * the heart beat version may be lesser than the version passed
              * in and some application state has a version that is greater
              * than the version passed in. In this case we also send the old
              * heart beat and throw it away on the receiver if it is redundant.
@@ -557,7 +559,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
             EndPointState localEndPointState = endPointStateMap_.get(gDigest.endPoint_);
             /*
              * If the local endpoint state exists then report to the FD only
-             * if the versions workout.
+             * if the versions work out.
             */
             if ( localEndPointState != null )
             {
@@ -623,9 +625,9 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
         }
     }
 
-    void resusitate(EndPoint addr, EndPointState localState)
+    void resuscitate(EndPoint addr, EndPointState localState)
     {
-        logger_.debug("Attempting to resusitate " + addr);
+        logger_.debug("Attempting to resuscitate " + addr);
         if ( !localState.isAlive() )
         {
             isAlive(addr, localState, true);
@@ -673,7 +675,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
 	                int remoteMaxVersion = getMaxEndPointStateVersion(remoteState);
 	                if ( remoteMaxVersion > localMaxVersion )
 	                {
-	                    resusitate(ep, localEpStatePtr);
+	                    resuscitate(ep, localEpStatePtr);
 	                    applyHeartBeatStateLocally(ep, localEpStatePtr, remoteState);
 	                    /* apply ApplicationState */
 	                    applyApplicationStateLocally(ep, localEpStatePtr, remoteState);
@@ -694,7 +696,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
 
         if ( remoteHbState.getGeneration() > localHbState.getGeneration() )
         {
-            resusitate(addr, localState);
+            resuscitate(addr, localState);
             localState.setHeartBeatState(remoteHbState);
         }
         if ( localHbState.getGeneration() == remoteHbState.getGeneration() )

@@ -58,9 +58,9 @@ class LoadInfo
     
     LoadInfo(String loadInfo)
     {
-        String[] peices = loadInfo.split(":");
-        count_ = Integer.parseInt(peices[0]);
-        diskSpace_ = peices[1];
+        String[] pieces = loadInfo.split(":");
+        count_ = Integer.parseInt(pieces[0]);
+        diskSpace_ = pieces[1];
     }
     
     int count()

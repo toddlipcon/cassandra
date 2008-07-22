@@ -41,12 +41,12 @@ import com.facebook.infrastructure.utils.LogUtil;
 
 
 /*
- * This class manages the read repairs . This is a singleton class
- * it basically uses the cache table construct to schedule writes that have to be 
+ * This class manages the read repairs. This is a singleton class.
+ * It basically uses the cache table construct to schedule writes that have to be 
  * made for read repairs. 
- * A cachetable is created which wakes up every n  milliseconds specified by 
- * expirationTimeInMillis and calls a global hook fn on pending entries 
- * This fn basically sends the message to the appropriate servers to update them
+ * A cachetable is created which wakes up every n milliseconds as specified by 
+ * expirationTimeInMillis and calls a global hook function on pending entries.
+ * This function basically sends the message to the appropriate servers to update them
  * with the latest changes.
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
@@ -106,8 +106,8 @@ class ReadRepairManager
 	}
 
 	/*
-	 * This is the fn that should be used to scheule a read repair 
-	 * specify a endpoint on whcih the read repair should happen and the row mutaion
+	 * This is the fn that should be used to scheule a read repair .
+	 * Specify a endpoint on which the read repair should happen and the row mutation
 	 * message that has the repaired row.
 	 */
 	public void schedule(EndPoint target, RowMutationMessage rowMutationMessage)

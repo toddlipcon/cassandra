@@ -215,8 +215,8 @@ public final class SuperColumn implements IColumn, Serializable
     }
 
     /*
-     * Go through each sub column if it exists then as it to resolve itself
-     * if the column does not exist then create it.
+     * Go through each sub column if it exists then ask it to resolve itself.
+     * If the column does not exist then create it.
      */
     public boolean putColumn(IColumn column)
     {
@@ -377,10 +377,10 @@ class SuperColumnSerializer implements ICompactSerializer2<IColumn>
     }
 
     /*
-     * This method fills the Super Column object with the column inforamtion
+     * This method fills the Super Column object with the column information
      * from the DataInputStream. The "items" parameter tells us whether we need
      * all the colunms or just a subset of all the Columns that make up the
-     * Super Column. If "items" is -1 then we need all the columns if not we
+     * Super Column. If "items" is -1 then we need all the columns; if not we
      * deserialize only as many columns as indicated by the "items" parameter.
     */
     private void fillSuperColumn(SuperColumn superColumn, int startPosition, int count, DataInputStream dis) throws IOException

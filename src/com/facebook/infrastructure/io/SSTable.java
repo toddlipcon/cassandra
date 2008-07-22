@@ -97,7 +97,7 @@ public class SSTable
     }
     
     /**
-     * This abstraction provides LRU symantics for the keys that are 
+     * This abstraction provides LRU semantics for the keys that are 
      * "touched". Currently it holds the offset of the key in a data
      * file. May change to hold a reference to a IFileReader which
      * memory maps the key and its associated data on a touch.
@@ -522,6 +522,7 @@ public class SSTable
     
     /*
      * Seeks to the specified key on disk.
+     * @param fData if set, will read the data off disk to ensure it is in buffer cache
     */
     public void touch(String key, boolean fData) throws IOException
     {

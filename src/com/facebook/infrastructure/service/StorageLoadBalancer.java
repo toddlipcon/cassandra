@@ -341,7 +341,8 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
         {
             /*
              * If the target is a neighbour then it is
-             * moveable if its
+             * moveable if by averaging our load with it will
+             * cause both nodes to fall under the system "heavy" threshold
             */
             LoadInfo load = loadInfo2_.get(target);
             if ( load == null )
@@ -350,10 +351,7 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
             {
                 int myload = localLoad();
                 int avgLoad = (load.count() + myload) >> 1;
-                if ( avgLoad <= threshold )
-                    return true;
-                else
-                    return false;
+                return ( avgLoad <= threshold );
             }
         }
         else
@@ -383,7 +381,7 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
 
     /*
      * Determine the nodes that are lightly loaded. Choose at
-     * random one of the lightly loaded nodes and use them as
+     * random one of the lightly loaded nodes and use it as
      * a potential target for load balance.
     */
     private EndPoint findARandomLightNode()

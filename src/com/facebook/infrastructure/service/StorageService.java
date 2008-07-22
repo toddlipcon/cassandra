@@ -136,7 +136,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
 
     /*
      * This class contains a helper method that will be used by
-     * all abstraction that implement the IReplicaPlacementStrategy
+     * all abstractions that implement the IReplicaPlacementStrategy
      * interface.
     */
     abstract class AbstractStrategy implements IReplicaPlacementStrategy
@@ -475,7 +475,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 {
                     long startTime = System.currentTimeMillis();
                     doTransfer(bsmd.target_, bsmd.ranges_);     
-                    logger_.debug("Time taken to boostrap " + 
+                    logger_.debug("Time taken to bootstrap " + 
                             bsmd.target_ + 
                             " is " + 
                             (System.currentTimeMillis() - startTime) +
@@ -648,7 +648,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     }
 
     /*
-     * This class handles the boostrapping responsibilities for
+     * This class handles the bootstrapping responsibilities for
      * any new endpoint.
     */
     class BootStrapper implements Runnable
@@ -1747,7 +1747,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         }
     }
 
-    /* This methods belong to the MBean interface */
+    /* These methods belong to the MBean interface */
 
     public long getRequestHandled()
     {
@@ -2144,9 +2144,9 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
 				return endpoints[j];
 			}
 		}
-		// We have tried to be really nice but looks like theer are no servers 
+		// We have tried to be really nice but looks like there are no servers 
 		// in the local data center that are alive and can service this request so 
-		// just send it to teh first alive guy and see if we get anything.
+		// just send it to the first alive guy and see if we get anything.
 		j = 0;
 		for ( ; j < endpoints.length; ++j )
 		{

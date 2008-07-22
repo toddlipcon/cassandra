@@ -126,8 +126,8 @@ class LeaderElector implements IEndPointStateChangeSubscriber
                     logger_.debug("Elected leader is " + leader_ + " @ znode " + ( path + "/" + values.get(0) ) );                   
                     Collections.sort(values);
                     /* We need only the last portion of this znode */
-                    String[] peices = pathCreated_.split("/");
-                    int index = Collections.binarySearch(values, peices[peices.length - 1]);                   
+                    String[] pieces = pathCreated_.split("/");
+                    int index = Collections.binarySearch(values, pieces[pieces.length - 1]);                   
                     if ( index > 0 )
                     {
                         String pathToCheck = path + "/" + values.get(index - 1);

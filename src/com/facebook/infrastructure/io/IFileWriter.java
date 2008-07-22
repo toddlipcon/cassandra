@@ -57,7 +57,7 @@ public interface IFileWriter
     
     /**
      * Appends the key and the value to the the underlying SequenceFile.
-     * @param key key associated with this peice of data.
+     * @param key key associated with this piece of data.
      * @param buffer buffer containing the serialized data.
      * @throws IOException
      */
@@ -65,7 +65,7 @@ public interface IFileWriter
     
     /**
      * Appends the key and the value to the the underlying SequenceFile.
-     * @param key key associated with this peice of data.
+     * @param key key associated with this piece of data.
      * @param value byte array containing the serialized data.
      * @throws IOException
      */
@@ -75,7 +75,7 @@ public interface IFileWriter
      * Appends the key and the long value to the the underlying SequenceFile.
      * This is used in the contruction of the index file associated with a 
      * SSTable.
-     * @param key key associated with this peice of data.
+     * @param key key associated with this piece of data.
      * @param value value associated with this key.
      * @throws IOException
      */

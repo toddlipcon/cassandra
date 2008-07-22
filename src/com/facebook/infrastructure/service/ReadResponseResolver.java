@@ -38,9 +38,9 @@ import com.facebook.infrastructure.net.Message;
 import com.facebook.infrastructure.utils.LogUtil;
 
 /*
- * This class is used by all read functions and is called by the Qorum 
- * when atleast a few of the servers ( few is specified in Quorum)
- * have sent the response . The resolve fn then schedules read repair 
+ * This class is used by all read functions and is called by the Quorum 
+ * when at least a few of the servers ( few is specified in Quorum)
+ * have sent the response. The resolve function then schedules read repair 
  * and resolution of read data from the various servers.
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
@@ -68,7 +68,7 @@ public class ReadResponseResolver implements IResponseResolver<Row>
 		boolean isDigestQuery = false;
         
         /*
-		 * Populate the list of rows from each of the messages
+		 * Populate the list of rows from each of the messages.
 		 * Check to see if there is a digest query. If a digest 
          * query exists then we need to compare the digest with 
          * the digest of the data that is received.
@@ -101,8 +101,8 @@ public class ReadResponseResolver implements IResponseResolver<Row>
                 logger_.info(LogUtil.throwableToString(ex));
             }
 		}
-		// If there was a digest query compare it withh all teh data digests 
-		// If there is a mismatch then thwrow an exception so that read repair can happen.
+		// If there was a digest query compare it withh all the data digests 
+		// If there is a mismatch then throw an exception so that read repair can happen.
 		if(isDigestQuery)
 		{
 			for(Row row: rowList)
@@ -126,7 +126,7 @@ public class ReadResponseResolver implements IResponseResolver<Row>
 		{
 			retRow.repair(rowList.get(i));			
 		}
-        // At  this point  we have the return row .
+        // At this point we have the return row.
 		// Now we need to calculate the differnce 
 		// so that we can schedule read repairs 
 		

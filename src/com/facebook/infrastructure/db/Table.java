@@ -118,7 +118,7 @@ public class Table
 
                     /* The key is the table name */
                     String key = bufIn.readUTF();
-                    /* read the size of the data we ignore this value */
+                    /* read the size of the data (we ignore this value) */
                     bufIn.readInt();
                     tableMetadata_ = Table.TableMetadata.serializer().deserialize(bufIn);
                     break;
@@ -272,8 +272,8 @@ public class Table
                 logger_.debug("Merging the counting bloom filter in the sampler ...");
                 StorageService.instance().sample(streamContext.getCardinality());                
                 logger_.debug("Done merging " + streamContext.getCardinality().count() + " keys in the sampler ...");
-                String[] peices = CassandraUtilities.strip(fileName, "-");
-                Table.open(peices[0]).getColumnFamilyStore(peices[1]).addToList(streamContext.getTargetFile());                
+                String[] pieces = CassandraUtilities.strip(fileName, "-");
+                Table.open(pieces[0]).getColumnFamilyStore(pieces[1]).addToList(streamContext.getTargetFile());                
             }
             
             EndPoint to = new EndPoint(host, DatabaseDescriptor.getStoragePort());
@@ -307,7 +307,7 @@ public class Table
                 
                 Map<String, String> fileNames = getNewNames(streamContexts);
                 /*
-                 * For each of stream context's in the incoming message
+                 * For each of stream contexts in the incoming message
                  * generate the new file names and store the new file names
                  * in the StreamContextManager.
                 */
@@ -315,8 +315,8 @@ public class Table
                 {                    
                     StreamContextManager.StreamStatus streamStatus = new StreamContextManager.StreamStatus(streamContext.getTargetFile(), streamContext.getExpectedBytes() );
                     File sourceFile = new File( streamContext.getTargetFile() );
-                    String[] peices = CassandraUtilities.strip(sourceFile.getName(), "-");
-                    String newFileName = fileNames.get( peices[1] + "-" + peices[2] );
+                    String[] pieces = CassandraUtilities.strip(sourceFile.getName(), "-");
+                    String newFileName = fileNames.get( pieces[1] + "-" + pieces[2] );
                     
                     if ( isDataFile(streamContext.getTargetFile()) )
                     {
@@ -358,8 +358,8 @@ public class Table
             Set<String> distinctEntries = new HashSet<String>();
             for ( StreamContextManager.StreamContext streamContext : streamContexts )
             {
-                String[] peices = CassandraUtilities.strip(streamContext.getTargetFile(), "-");
-                distinctEntries.add(peices[1] + "-" + peices[2]);
+                String[] pieces = CassandraUtilities.strip(streamContext.getTargetFile(), "-");
+                distinctEntries.add(pieces[1] + "-" + pieces[2]);
             }
             
             /* Generate unique file names per entry */
@@ -368,8 +368,8 @@ public class Table
             
             for ( String distinctEntry : distinctEntries )
             {
-                String[] peices = CassandraUtilities.strip(distinctEntry, "-");
-                ColumnFamilyStore cfStore = columnFamilyStores.get(peices[0]);
+                String[] pieces = CassandraUtilities.strip(distinctEntry, "-");
+                ColumnFamilyStore cfStore = columnFamilyStores.get(pieces[0]);
                 logger_.debug("Generating file name for " + distinctEntry + " ...");
                 fileNames.put(distinctEntry, cfStore.getNextFileName());
             }
@@ -379,12 +379,14 @@ public class Table
         
         private boolean isStreamContextForThisColumnFamily(StreamContextManager.StreamContext streamContext, String cf)
         {
-            String[] peices = CassandraUtilities.strip(streamContext.getTargetFile(), "-");
-            return peices[1].equals(cf);
+            String[] pieces = CassandraUtilities.strip(streamContext.getTargetFile(), "-");
+            return pieces[1].equals(cf);
         }
         
         private boolean isIndexFile(String file)
         {
+
+
             return ( file.indexOf("-Index.db") != -1 );
         }
         
@@ -395,8 +397,8 @@ public class Table
         
         private String getColumnFamilyFromFile(String file)
         {
-            String[] peices = CassandraUtilities.strip(file, "-");
-            return peices[1];
+            String[] pieces = CassandraUtilities.strip(file, "-");
+            return pieces[1];
         }
                 
         private void addStreamContext(String host, StreamContextManager.StreamContext streamContext, StreamContextManager.StreamStatus streamStatus)
@@ -519,7 +521,7 @@ public class Table
     
     /*
      * This method is used to ensure that all keys
-     * prior to the specified key, as dtermined by
+     * prior to the specified key, as determined by
      * the SSTable index bucket it falls in, are in
      * buffer cache.  
     */

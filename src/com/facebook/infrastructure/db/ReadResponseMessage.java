@@ -30,7 +30,7 @@ import com.facebook.infrastructure.service.StorageService;
 
 /*
  * The read response message is sent by the server when reading data
- * this encapsulates the tablename and teh row that has been read.
+ * this encapsulates the tablename and the row that has been read.
  * The table name is needed so that we can use it to create repairs.
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
