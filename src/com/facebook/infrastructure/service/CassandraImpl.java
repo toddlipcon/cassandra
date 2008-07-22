@@ -358,7 +358,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		 * Do the consistency checks in the background and return the
 		 * non NULL row.
 		 */
-		if ( endpoints.size() > 0 )
+		if ( !endpoints.isEmpty() )
 			StorageService.instance().doConsistencyCheck(row, endpoints, columnFamily, columns);
 		return row;
 	}
@@ -416,7 +416,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty())
 			{
 				logger_	.info("ERROR ColumnFamily " + columnFamily + " map is missing.....: "
 							   + "   key:" + key
@@ -461,7 +461,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty() )
 			{
 				logger_	.info("ERROR ColumnFamily " + columnFamily_column + " map is missing.....: "
 							   + "   key:" + key
@@ -489,7 +489,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			{
 				columns = cfamily.getAllColumns();
 			}
-			if (columns == null || columns.size() == 0)
+			if (columns == null || columns.isEmpty() )
 			{
 				logger_	.info("ERROR Columns are missing.....: "
 							   + "   key:" + key
@@ -536,7 +536,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty() )
 			{
 				logger_	.info("ERROR ColumnFamily map is missing.....: "
 							   + "   key:" + key
@@ -564,7 +564,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			{
 				columns = cfamily.getAllColumns();
 			}
-			if (columns == null || columns.size() == 0)
+			if (columns == null || columns.isEmpty() )
 			{
 				logger_	.info("ERROR Columns are missing.....: "
 							   + "   key:" + key
@@ -607,7 +607,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty() )
 			{
 				logger_	.info("ERROR ColumnFamily map is missing.....: "
 							   + "   key:" + key
@@ -635,7 +635,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			{
 				columns = cfamily.getAllColumns();
 			}
-			if (columns == null || columns.size() == 0)
+			if (columns == null || columns.isEmpty() )
 			{
 				logger_	.info("ERROR Columns are missing.....: "
 							   + "   key:" + key
@@ -794,7 +794,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty() )
 			{
 				logger_	.info("ERROR ColumnFamily map is missing.....: "
 							   + "   key:" + key
@@ -811,7 +811,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 				return retlist;
 			}
 			Collection<IColumn> columns = cfamily.getAllColumns();
-			if (columns == null || columns.size() == 0)
+			if (columns == null || columns.isEmpty() )
 			{
 				logger_	.info("ERROR Columns are missing.....: "
 							   + "   key:" + key
@@ -825,7 +825,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 				superColumn_t thrift_superColumn = new superColumn_t();
 				thrift_superColumn.name = column.name();
 				Collection<IColumn> subColumns = column.getSubColumns();
-				if(subColumns.size() != 0 )
+				if( !subColumns.isEmpty() )
 				{
 					thrift_superColumn.columns = new ArrayList<column_t>();
 					for( IColumn subColumn : subColumns )
@@ -867,7 +867,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.size() == 0)
+			if (cfMap == null || cfMap.isEmpty() )
 			{
 				logger_	.info("ERROR ColumnFamily map is missing.....: "
 							   + "   key:" + key
@@ -884,7 +884,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 				return ret;
 			}
 			Collection<IColumn> columns = cfamily.getAllColumns();
-			if (columns == null || columns.size() == 0)
+			if (columns == null || columns.isEmpty() )
 			{
 				logger_	.info("ERROR Columns are missing.....: "
 							   + "   key:" + key
@@ -898,7 +898,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 				ret = new superColumn_t();
 				ret.name = column.name();
 				Collection<IColumn> subColumns = column.getSubColumns();
-				if(subColumns.size() != 0 )
+				if( !subColumns.isEmpty() )
 				{
 					ret.columns = new ArrayList<column_t>();
 					for(IColumn subColumn : subColumns)

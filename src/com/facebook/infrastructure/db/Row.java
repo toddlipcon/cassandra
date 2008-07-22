@@ -97,7 +97,7 @@ public class Row implements Serializable
 
     public boolean isEmpty()
     {
-    	return ( columnFamilies_.size() == 0 );
+    	return ( columnFamilies_.isEmpty() );
     }
 
     /*
@@ -173,7 +173,7 @@ public class Row implements Serializable
             		rowDiff.getColumnFamilies().put(cfName, cfDiff);
             }
         }
-        if(rowDiff.getColumnFamilies().size() != 0)
+        if(!rowDiff.getColumnFamilies().isEmpty())
         	return rowDiff;
         else
         	return null;

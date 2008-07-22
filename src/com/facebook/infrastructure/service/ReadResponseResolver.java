@@ -115,16 +115,16 @@ public class ReadResponseResolver implements IResponseResolver<Row>
 		}
 		
         /* If the rowList is empty then we had some exception above. */
-        if ( rowList.size() == 0 )
+        if ( rowList.isEmpty() )
         {
             return retRow;
         }
         
         /* Now calculate the resolved row */
 		retRow = new Row(key);		
-		for (int i = 0 ; i < rowList.size(); i++)
+		for (Row row : rowList)
 		{
-			retRow.repair(rowList.get(i));			
+			retRow.repair(row);
 		}
         // At this point we have the return row.
 		// Now we need to calculate the differnce 

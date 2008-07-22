@@ -152,7 +152,7 @@ public final class ColumnFamily implements Serializable
         if ( columnType == null )
         {
         	List<String> tables = DatabaseDescriptor.getTables();
-        	if ( tables.size() > 0 )
+        	if ( !tables.isEmpty() )
         	{
         		String table = tables.get(0);
         		columnType = Table.open(table).getColumnFamilyType(name_);
@@ -371,7 +371,7 @@ public final class ColumnFamily implements Serializable
         		}
         	}
         }
-        if(cfDiff.getColumns().size() != 0)
+        if(!cfDiff.getColumns().isEmpty())
         	return cfDiff;
         else
         	return null;

@@ -366,7 +366,7 @@ public class Memtable implements MemtableMBean
     void flush(CommitLog.CommitLogContext cLogCtx) throws IOException
     {
         ColumnFamilyStore cfStore = Table.open(table_).getColumnFamilyStore(cfName_);
-        if ( columnFamilies_.size() == 0 )
+        if ( columnFamilies_.isEmpty() )
         {
         	// This should be called even if size is 0 
         	// This is because we should try to delete the useless commitlogs 

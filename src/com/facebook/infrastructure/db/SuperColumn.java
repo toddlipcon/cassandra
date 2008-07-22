@@ -293,7 +293,7 @@ public final class SuperColumn implements IColumn, Serializable
         		}
         	}
         }
-        if(columnDiff.getSubColumns().size() != 0)
+        if(!columnDiff.getSubColumns().isEmpty())
         	return columnDiff;
         else
         	return null;

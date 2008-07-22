@@ -66,7 +66,7 @@ public class ReadVerbHandler implements IVerbHandler
             	row = table.get(readMessage.key());
             else
             {
-            	if(readMessage.getColumnNames().size() == 0)
+            	if(readMessage.getColumnNames().isEmpty())
             	{
 	            	if(readMessage.count() > 0 && readMessage.start() >= 0)
 	            		row = table.getRow(readMessage.key(), readMessage.columnFamily_column(), readMessage.start(), readMessage.count());

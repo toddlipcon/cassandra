@@ -419,9 +419,9 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
      */
     boolean doGossipToLiveMember(Message message)
     {
-        int size = liveEndpoints_.size();
-        if ( size == 0 )
+        if (liveEndpoints_.isEmpty())
             return false;
+
         // return sendGossipToLiveNode(message);
         /* Use this for a cluster size >= 30 */
         return sendGossip(message, liveEndpoints_);
@@ -453,7 +453,7 @@ public class Gossiper implements IFailureDetectionEventListener, IEndPointStateC
                 return;
             }
 
-            if ( liveEndpoints_.size() == 0 )
+            if ( liveEndpoints_.isEmpty() )
             {
                 sendGossip(message, seeds_);
             }
@@ -1072,7 +1072,7 @@ class GossipDigestAckVerbHandler implements IVerbHandler
             List<GossipDigest> gDigestList = gDigestAckMessage.getGossipDigestList();
             Map<EndPoint, EndPointState> epStateMap = gDigestAckMessage.getEndPointStateMap();
             
-            if ( epStateMap.size() > 0 )
+            if ( !epStateMap.isEmpty() )
             {
                 /* Notify the Failure Detector */
                 Gossiper.instance().notifyFailureDetector(epStateMap);

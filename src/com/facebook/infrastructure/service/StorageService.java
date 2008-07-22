@@ -495,7 +495,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         */
         private void doTransfer(EndPoint target, List<Range> ranges) throws IOException
         {
-            if ( ranges.size() == 0 )
+            if ( ranges.isEmpty() )
             {
                 logger_.debug("No ranges to give scram ...");
                 return;

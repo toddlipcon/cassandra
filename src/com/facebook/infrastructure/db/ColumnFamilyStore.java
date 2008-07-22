@@ -125,7 +125,7 @@ public class ColumnFamilyStore
             }
         }
         Collections.sort(indices);
-        int value = (indices.size() > 0) ? (indices.get(indices.size() - 1)) : 0;
+        int value = (!indices.isEmpty()) ? (indices.get(indices.size() - 1)) : 0;
         fileIndexGenerator_.set(value);
         memtable_ = new AtomicReference<Memtable>( new Memtable(table_, columnFamily_) );
         binaryMemtable_ = new AtomicReference<BinaryMemtable>( new BinaryMemtable(table_, columnFamily_) );
@@ -197,7 +197,7 @@ public class ColumnFamilyStore
          * no files on disk we do not want to display
          * something ugly on the admin page.
         */
-        if ( ssTables_.size() == 0 )
+        if ( ssTables_.isEmpty() )
         {
             return sb.toString();
         }
@@ -738,7 +738,7 @@ public class ColumnFamilyStore
         PriorityQueue<FileStruct> pq = new PriorityQueue<FileStruct>();
         long bytesread = -1;
 
-        if (files.size() > 1 || (ranges != null &&  files.size() > 0))
+        if (files.size() > 1 || (ranges != null &&  !files.isEmpty()))
         {
             int bufferSize = Math.min( (ColumnFamilyStore.compactionMemoryThreshold_ / files.size()), minBufferSize ) ;
             FileStruct fs = null;
@@ -1106,7 +1106,7 @@ public class ColumnFamilyStore
 	            return null;
 	        }
 	        PriorityQueue<FileStruct> pq = initializePriorityQueue(files, ranges, minBufferSize);
-	        if (pq.size() > 0)
+	        if (!pq.isEmpty())
 	        {
 	            mergedFileName = getTempFileName();
 	            SSTable ssTableRange = null ;
@@ -1120,10 +1120,10 @@ public class ColumnFamilyStore
 	            BloomFilter compactedRangeBloomFilter = new BloomFilter(expectedBloomFilterSize, 8);
 	            List<ColumnFamily> columnFamilies = new ArrayList<ColumnFamily>();
 
-	            while (pq.size() > 0 || lfs.size() > 0)
+	            while (!pq.isEmpty() || !lfs.isEmpty())
 	            {
 	                FileStruct fs = null;
-	                if (pq.size() > 0)
+	                if (!pq.isEmpty())
 	                {
 	                    fs = pq.poll();
 	                }
@@ -1337,7 +1337,7 @@ public class ColumnFamilyStore
 	        // If the compaction file path is null that means we have no space left for this compaction.
 	        if( compactionFileLocation == null )
 	        {
-	        	if( ranges == null || ranges.size() == 0)
+	        	if( ranges == null || ranges.isEmpty() )
 	        	{
 	        		String maxFile = getMaxSizeFile( files );
 	        		files.remove( maxFile );
@@ -1348,7 +1348,7 @@ public class ColumnFamilyStore
 	            return null;
 	        }
 	        PriorityQueue<FileStruct> pq = initializePriorityQueue(files, ranges, minBufferSize);
-	        if (pq.size() > 0)
+	        if (!pq.isEmpty())
 	        {
 	            String mergedFileName = getTempFileName();
 	            SSTable ssTable = null;
@@ -1364,10 +1364,10 @@ public class ColumnFamilyStore
 	            BloomFilter compactedRangeBloomFilter = new BloomFilter(expectedBloomFilterSize, 8);
 	            List<ColumnFamily> columnFamilies = new ArrayList<ColumnFamily>();
 
-	            while (pq.size() > 0 || lfs.size() > 0)
+	            while (!pq.isEmpty() || lfs.isEmpty())
 	            {
 	                FileStruct fs = null;
-	                if (pq.size() > 0)
+	                if (!pq.isEmpty())
 	                {
 	                    fs = pq.poll();
 	                }

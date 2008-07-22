@@ -170,7 +170,7 @@ class ConsistencyManager implements Runnable
 		logger_.debug(" Run the consistency checks for " + columnFamily_);
 		String table = DatabaseDescriptor.getTables().get(0);
 		ReadMessage readMessageDigestOnly = null;
-		if(columnNames_.size() == 0)
+		if(columnNames_.isEmpty() )
 		{
 			if( start_ >= 0 && count_ < Integer.MAX_VALUE)
 			{

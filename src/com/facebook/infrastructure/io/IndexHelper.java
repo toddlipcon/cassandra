@@ -48,7 +48,7 @@ public class IndexHelper
 	public static void serialize(int indexSizeInBytes, List<ColumnPositionInfo> columnIndexList, DataOutputStream dos) throws IOException
 	{
 		/* if we have no data to index, the write that there is no index present */
-		if(indexSizeInBytes == 0 || columnIndexList == null || columnIndexList.size() == 0)
+		if(indexSizeInBytes == 0 || columnIndexList == null || columnIndexList.isEmpty() )
 		{
 			dos.writeBoolean(false);
 		}

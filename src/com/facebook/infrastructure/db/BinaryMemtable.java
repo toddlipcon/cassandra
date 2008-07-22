@@ -134,7 +134,7 @@ public class BinaryMemtable implements MemtableMBean
     */
     void flush() throws IOException
     {
-        if ( columnFamilies_.size() == 0 )
+        if ( columnFamilies_.isEmpty() )
             return;
         ColumnFamilyStore cfStore = Table.open(table_).getColumnFamilyStore(cfName_);
         String directory = DatabaseDescriptor.getDataFileLocation();

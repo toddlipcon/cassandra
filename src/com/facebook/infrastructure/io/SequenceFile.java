@@ -886,7 +886,7 @@ public class SequenceFile
 	                    bufOut.write(file_, dataSize);
                     }
                     /* if we need to read the all the columns do not read the column indexes */
-                    else if(columnNames == null || columnNames.size() == 0)
+                    else if(columnNames == null || columnNames.isEmpty() )
                     {
                     	int bytesSkipped = IndexHelper.skip(file_);
 	                    /*
@@ -1504,7 +1504,7 @@ public class SequenceFile
                         bufOut.write(buffer_, dataSize);
                     }
                     /* if we need to read the all the columns do not read the column indexes */
-                    else if(columnNames == null || columnNames.size() == 0)
+                    else if(columnNames == null || columnNames.isEmpty() )
                     {
                         int bytesSkipped = IndexHelper.skip(buffer_);
                         /*
