@@ -2129,36 +2129,39 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
 	protected EndPoint findSuitableEndPoint(String key) throws IOException
 	{
+        // If it's local, use ourself.
+        if (isInTopN(key))
+            return tcpAddr_;
+
 		EndPoint[] endpoints = getNStorageEndPoint(key);
-		for(EndPoint endPoint: endpoints)
-		{
-			if(endPoint.equals(StorageService.getLocalStorageEndPoint()))
-			{
-				return endPoint;
+        EndPoint lastLiveEp = null;
+
+        for (EndPoint ep : endpoints) {
+            // Skip dead endpoints
+            if (! FailureDetector.instance().isAlive(ep) )
+                continue;
+
+            // If it's in the same datacenter, return immediately
+            if ( StorageService.instance().isInSameDataCenter(ep) )
+            {
+				logger_.debug("EndPoint " + ep + " is in the same data center as local storage endpoint.");
+				return ep;
 			}
+
+            // This one is an option
+            lastLiveEp = ep;
 		}
-		int j = 0;
-		for ( ; j < endpoints.length; ++j )
-		{
-			if ( StorageService.instance().isInSameDataCenter(endpoints[j]) && FailureDetector.instance().isAlive(endpoints[j]) )
-			{
-				logger_.debug("EndPoint " + endpoints[j] + " is in the same data center as local storage endpoint.");
-				return endpoints[j];
-			}
-		}
+
 		// We have tried to be really nice but looks like there are no servers 
 		// in the local data center that are alive and can service this request so 
-		// just send it to the first alive guy and see if we get anything.
-		j = 0;
-		for ( ; j < endpoints.length; ++j )
-		{
-			if ( FailureDetector.instance().isAlive(endpoints[j]) )
-			{
-				logger_.debug("EndPoint " + endpoints[j] + " is alive so get data from it.");
-				return endpoints[j];
-			}
-		}
+		// just send it to the last alive guy and see if we get anything.
+        if ( lastLiveEp != null )
+        {
+            logger_.debug("EndPoint " + lastLiveEp + " is alive so get data from it.");
+            return lastLiveEp;
+        }
+
+        logger_.warn("Could not find any suitable endpoint for key '" + key + "'");
 		return null;
-		
 	}
 }
