@@ -41,10 +41,12 @@ import com.facebook.infrastructure.db.*;
 import com.facebook.infrastructure.net.*;
 import com.facebook.infrastructure.utils.*;
 import org.apache.log4j.Logger;
+
 /**
+ * Implementation of a Thrift interface for Cassandra.
+ *
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
-
 public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 {
 	private static Logger logger_ = Logger.getLogger(CassandraImpl.class);
@@ -77,7 +79,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		storageService_.start();
 	}
 
-	private Map<EndPoint, Message> createWriteMessages(RowMutationMessage rmMessage, Map<EndPoint, EndPoint> endpointMap) throws IOException
+	private Map<EndPoint, Message> createWriteMessages(
+        RowMutationMessage rmMessage, Map<EndPoint, EndPoint> endpointMap) throws IOException
 	{
 		Map<EndPoint, Message> messageMap = new HashMap<EndPoint, Message>();
 		Message message = RowMutationMessage.makeRowMutationMessage(rmMessage);
@@ -134,233 +137,174 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return;
 	}
 
-	protected Row readProtocol(String tablename, String key, String columnFamily, List<String> columnNames, StorageService.ConsistencyLevel consistencyLevel) throws Exception
+    /**
+     * Performs the actual reading of a row out of the StorageService, fetching
+     * a specific set of column names from a given column family.
+     */
+	protected Row readProtocol(String tablename,
+                               String key,
+                               String columnFamily,
+                               IColumnSelection columnSelection,
+                               StorageService.ConsistencyLevel consistencyLevel)
+        throws TException
 	{
-		Row row = null;
-		boolean foundLocal = false;
-		EndPoint[] endpoints = storageService_.getNStorageEndPoint(key);
-		for(EndPoint endPoint: endpoints)
-		{
-			if(endPoint.equals(StorageService.getLocalStorageEndPoint()))
-			{
-				foundLocal = true;
-				break;
-			}
-		}
-		if(!foundLocal)
-		{
-			row = strongReadProtocol(tablename, key, columnFamily, columnNames);
-			return row;
-		}
-		else
-		{
-			switch ( consistencyLevel )
-			{
-			case WEAK:
-				row = weakReadProtocol(tablename, key, columnFamily, columnNames);
-				break;
-
-			case STRONG:
-				row = strongReadProtocol(tablename, key, columnFamily, columnNames);
-				break;
-
-			default:
-				row = weakReadProtocol(tablename, key, columnFamily, columnNames);
-				break;
-			}
-		}
-		return row;
-
-
-	}
-	protected Row readProtocol(String tablename, String key, String columnFamily, int start, int count, StorageService.ConsistencyLevel consistencyLevel) throws Exception
-	{
-		Row row = null;
-		boolean foundLocal = false;
-		EndPoint[] endpoints = storageService_.getNStorageEndPoint(key);
-		for(EndPoint endPoint: endpoints)
-		{
-			if(endPoint.equals(StorageService.getLocalStorageEndPoint()))
-			{
-				foundLocal = true;
-				break;
-			}
-		}
-		if(!foundLocal)
-		{
-			row = strongReadProtocol(tablename, key, columnFamily, start, count);
-			return row;
-		}
-		else
-		{
-			switch ( consistencyLevel )
-			{
-			case WEAK:
-				row = weakReadProtocol(tablename, key, columnFamily, start, count);
-				break;
-
-			case STRONG:
-				row = strongReadProtocol(tablename, key, columnFamily, start, count);
-				break;
-
-			default:
-				row = weakReadProtocol(tablename, key, columnFamily, start, count);
-				break;
-			}
-		}
-		return row;
+        try {
+            if(! storageService_.isInTopN(key) ||
+               consistencyLevel == StorageService.ConsistencyLevel.STRONG)
+            {
+                return strongReadProtocol(tablename, key, columnFamily, columnSelection);
+            }
+            else
+            {
+                return weakReadProtocol(tablename, key, columnFamily, columnSelection);
+            }
+        }
+        catch (ColumnFamilyNotDefinedException cfnde) {
+            throw new InvalidColumnNameException(cfnde.getMessage());
+        }
+        catch (IOException ioe) {
+            throw new TException(ioe.toString());
+        }
+        catch (TimeoutException toe) {
+            throw new TException(toe.toString());
+        }
 	}
 
-	protected Row strongReadProtocol(String tablename, String key, String columnFamily, List<String> columns) throws Exception
+    /**
+     * Perform a read using the "strong" protocol.
+     */
+	protected Row strongReadProtocol(String tablename,
+                                     String key,
+                                     String columnFamily,
+                                     IColumnSelection columnSelection)
+        throws IOException, TimeoutException, ColumnFamilyNotDefinedException
 	{
         long startTime = System.currentTimeMillis();
 		// TODO: throw a thrift exception if we do not have N nodes
-		ReadMessage readMessage = new ReadMessage(tablename, key, columnFamily, columns);
 
-        ReadMessage readMessageDigestOnly = new ReadMessage(tablename, key, columnFamily, columns);
+		ReadMessage readMessage = columnSelection.makeReadMessage(tablename, key, columnFamily);
+        ReadMessage readMessageDigestOnly = columnSelection.makeReadMessage(tablename, key, columnFamily);
 		readMessageDigestOnly.setIsDigestQuery(true);
 
         Row row = doStrongReadProtocol(key, readMessage, readMessageDigestOnly);
         logger_.info("readProtocol: " + (System.currentTimeMillis() - startTime) + " ms.");
 		return row;
-	}
-
-	/*
-	 * This function executes the read protocol.
-		// 1. Get the N nodes from storage service where the data needs to be
-		// replicated
-		// 2. Construct a message for read\write
-		 * 3. Set one of the messages to get the data and the rest to get the digest
-		// 4. SendRR ( to all the nodes above )
-		// 5. Wait for a response from at least X nodes where X <= N and the data node
-		 * 6. If the digest matches return the data.
-		 * 7. else carry out read repair by getting data from all the nodes.
-		// 5. return success
-	 *
-	 */
-	protected Row strongReadProtocol(String tablename, String key, String columnFamily, int start, int count) throws IOException, TimeoutException
-	{
-        long startTime = System.currentTimeMillis();
-		// TODO: throw a thrift exception if we do not have N nodes
-		ReadMessage readMessage = null;
-		ReadMessage readMessageDigestOnly = null;
-		if( start >= 0 && count < Integer.MAX_VALUE)
-		{
-			readMessage = new ReadMessage(tablename, key, columnFamily, start, count);
-		}
-		else
-		{
-			readMessage = new ReadMessage(tablename, key, columnFamily);
-		}
-        Message message = ReadMessage.makeReadMessage(readMessage);
-		if( start >= 0 && count < Integer.MAX_VALUE)
-		{
-			readMessageDigestOnly = new ReadMessage(tablename, key, columnFamily, start, count);
-		}
-		else
-		{
-			readMessageDigestOnly = new ReadMessage(tablename, key, columnFamily);
-		}
-		readMessageDigestOnly.setIsDigestQuery(true);
-        Row row = doStrongReadProtocol(key, readMessage, readMessageDigestOnly);
-        logger_.info("readProtocol: " + (System.currentTimeMillis() - startTime) + " ms.");
-        return row;
 	}
 
 	/*
 	 * This method performs the actual read from the replicas.
+     *
+     * The strong consistency read works as follows:
+     *
+     *  - The list of nodes who have replicated the key is retrieved.
+     *  - One of those nodes is designated as the data endpoint.
+     *  - All of the other nodes are digest endpoints.
+     *  - Requests are sent to all nodes in parallel. The actual row data
+     *    is requested from the data endpoint; a digest of the data is
+     *    requested from the other endpoints.
+     *
+     *
 	 *  param @ key - key for which the data is required.
 	 *  param @ readMessage - the read message to get the actual data
 	 *  param @ readMessageDigest - the read message to get the digest.
 	*/
-	private Row doStrongReadProtocol(String key, ReadMessage readMessage, ReadMessage readMessageDigest) throws IOException, TimeoutException
+	private Row doStrongReadProtocol(String key,
+                                     ReadMessage readMessage,
+                                     ReadMessage readMessageDigest) throws IOException, TimeoutException
 	{
-		Row row = null;
 		Message message = ReadMessage.makeReadMessage(readMessage);
 		Message messageDigestOnly = ReadMessage.makeReadMessage(readMessageDigest);
 
-		IResponseResolver<Row> readResponseResolver = new ReadResponseResolver();
-		QuorumResponseHandler<Row> quorumResponseHandler = new QuorumResponseHandler<Row>(
-				DatabaseDescriptor.getReplicationFactor(),
-				readResponseResolver);
+        // Pick the endpoint that will be the "data" endpoint. We let the
+        // storage service pick this for us since it will prefer nearby
+        // or local endpoints.
 		EndPoint dataPoint = storageService_.findSuitableEndPoint(key);
-		List<EndPoint> endpointList = new ArrayList<EndPoint>( Arrays.asList( storageService_.getNStorageEndPoint(key) ) );
-		/* Remove the local storage endpoint from the list. */
-		endpointList.remove( dataPoint );
-		EndPoint[] endPoints = new EndPoint[endpointList.size() + 1];
-		Message messages[] = new Message[endpointList.size() + 1];
 
-		// first message is the data Point
-		endPoints[0] = dataPoint;
-		messages[0] = message;
+        // Get the full list of endpoints to send to
+        EndPoint[] endpoints = storageService_.getNStorageEndPoint(key);
 
-		for(int i=1; i < endPoints.length ; i++)
-		{
-			endPoints[i] = endpointList.get(i-1);
-			messages[i] = messageDigestOnly;
-		}
+        // Construct a parallel array of messages - message[i] is going to be
+        // sent to endpoints[i] for all i.
+        Message messages[] = new Message[endpoints.length];
 
+        boolean didSetDataPoint = false;
+        for (int i = 0; i < endpoints.length; i++)
+        {
+            if ( endpoints[i].equals(dataPoint) )
+            {
+                messages[i] = message;
+                didSetDataPoint = true;
+            }
+            else
+            {
+                messages[i] = messageDigestOnly;
+            }
+        }
+
+        // We need to check for a race condition here - it's possible that between
+        // getting the data endpoint and getting the list of endpoints, the endpoint list
+        // might have been updated such that we are only going to send out digests. In that
+        // case, fall back to just setting the first endpoint to be the data message.
+        if (! didSetDataPoint )
+        {
+            messages[0] = message;
+        }
+
+        // Send the messages!
 		try
 		{
-			MessagingService.getMessagingInstance().sendRR(messages, endPoints,	quorumResponseHandler);
+            IResponseResolver<Row> readResponseResolver = new ReadResponseResolver();
+            QuorumResponseHandler<Row> quorumResponseHandler = new QuorumResponseHandler<Row>(
+				DatabaseDescriptor.getReplicationFactor(),
+				readResponseResolver);
+
+			MessagingService.getMessagingInstance().sendRR(messages, endpoints,	quorumResponseHandler);
 
 	        long startTime2 = System.currentTimeMillis();
-			row = quorumResponseHandler.get();
+			Row row = quorumResponseHandler.get();
 	        logger_.info("quorumResponseHandler: " + (System.currentTimeMillis() - startTime2)
 	                + " ms.");
 			if (row == null)
 			{
 				logger_.info("ERROR No row for this key .....: " + key);
 				// TODO: throw a thrift exception
-				return row;
 			}
+            return row;
 		}
 		catch (DigestMismatchException ex)
 		{
+            // The read resolver detected that at least one of the nodes had data that differed
+            // from the returned data. In order to repair, we request the full data from all nodes.
 			IResponseResolver<Row> readResponseResolverRepair = new ReadResponseResolver();
 			QuorumResponseHandler<Row> quorumResponseHandlerRepair = new QuorumResponseHandler<Row>(
 					DatabaseDescriptor.getReplicationFactor(),
 					readResponseResolverRepair);
 			readMessage.setIsDigestQuery(false);
 			logger_.info("DigestMismatchException: " + key);
+
+            // Make a new message so that our repair read has a new ID. Otherwise stale messages might
+            // hit us and confuse things.
             Message messageRepair = ReadMessage.makeReadMessage(readMessage);
-			MessagingService.getMessagingInstance().sendRR(messageRepair, endPoints,
+			MessagingService.getMessagingInstance().sendRR(messageRepair, endpoints,
 					quorumResponseHandlerRepair);
+
+            Row row = null;
 			try
 			{
 				row = quorumResponseHandlerRepair.get();
 			}
 			catch(DigestMismatchException dex)
 			{
+                // TODO is there any way to get here? There should be no digests in the
+                // read resolve process, so this exception shouldn't be possible.
 				logger_.warn(LogUtil.throwableToString(dex));
 			}
 			if (row == null)
 			{
 				logger_.info("ERROR No row for this key .....: " + key);
 			}
+            return row;
 		}
-		return row;
-	}
-
-	protected Row weakReadProtocol(String tablename, String key, String columnFamily, List<String> columns) throws Exception
-	{
-		long startTime = System.currentTimeMillis();
-		List<EndPoint> endpoints = storageService_.getNLiveStorageEndPoint(key);
-		/* Remove the local storage endpoint from the list. */
-		endpoints.remove( StorageService.getLocalStorageEndPoint() );
-		// TODO: throw a thrift exception if we do not have N nodes
-
-		Table table = Table.open( DatabaseDescriptor.getTables().get(0) );
-		Row row = table.getRow(key, columnFamily, columns);
-
-		logger_.info("Local Read Protocol: " + (System.currentTimeMillis() - startTime) + " ms.");
-		/*
-		 * Do the consistency checks in the background and return the
-		 * non NULL row.
-		 */
-		if ( !endpoints.isEmpty() )
-			StorageService.instance().doConsistencyCheck(row, endpoints, columnFamily, columns);
-		return row;
 	}
 
 	/*
@@ -368,294 +312,197 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 	 * Read the data from the local disk and return if the row is NOT NULL. If the data is NULL do the read from
      * one of the other replicas (in the same data center if possible) till we get the data. In the event we get
      * the data we perform consistency checks and figure out if any repairs need to be done to the replicas.
+     *
+     * TODO: this comment does not seem to reflect what the code actually does...
 	 */
-	protected Row weakReadProtocol(String tablename, String key, String columnFamily, int start, int count) throws Exception
+	protected Row weakReadProtocol(String tablename,
+                                   String key,
+                                   String columnFamily,
+                                   IColumnSelection columnSelection)
+        throws IOException, TimeoutException, ColumnFamilyNotDefinedException
 	{
-		Row row = null;
 		long startTime = System.currentTimeMillis();
 		List<EndPoint> endpoints = storageService_.getNLiveStorageEndPoint(key);
 		/* Remove the local storage endpoint from the list. */
 		endpoints.remove( StorageService.getLocalStorageEndPoint() );
 		// TODO: throw a thrift exception if we do not have N nodes
 
-		Table table = Table.open( DatabaseDescriptor.getTables().get(0) );
-		if( start >= 0 && count < Integer.MAX_VALUE)
-		{
-			row = table.getRow(key, columnFamily, start, count);
-		}
-		else
-		{
-			row = table.getRow(key, columnFamily);
-		}
+		Table table = Table.open( tablename );
+		Row row = columnSelection.getTableRow(table, key, columnFamily);
 
 		logger_.info("Local Read Protocol: " + (System.currentTimeMillis() - startTime) + " ms.");
 		/*
 		 * Do the consistency checks in the background and return the
 		 * non NULL row.
 		 */
-		StorageService.instance().doConsistencyCheck(row, endpoints, columnFamily, start, count);
+		if ( !endpoints.isEmpty() )
+        {
+            columnSelection.doConsistencyCheck(
+                StorageService.instance(), row, endpoints, columnFamily);
+        }
 		return row;
 	}
 
-    protected ColumnFamily get_cf(String tablename, String key, String columnFamily, List<String> columNames) throws TException
+    /**
+     * Gets the ColumnFamily object for the given table, key, and cf.
+     *
+     * Throws Thrift Exceptions for missing column family, table, etc.
+     * Will not return null.
+     */
+    protected ColumnFamily get_cf(String tablename,
+                                  String key,
+                                  String columnFamily,
+                                  IColumnSelection columnSelection)
+        throws TException
 	{
-    	ColumnFamily cfamily = null;
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily);
-	        // check for  values
-	        if( values.length < 1 )
-	        	return cfamily;
-	        Row row = readProtocol(tablename, key, columnFamily, columNames, StorageService.ConsistencyLevel.WEAK);
-	        if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return cfamily;
-			}
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily);
+        // check for  values
+        if( values.length < 1 )
+            throw new InvalidColumnNameException("empty column family specifier");
 
-
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty())
-			{
-				logger_	.info("ERROR ColumnFamily " + columnFamily + " map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return cfamily;
-			}
-			cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily " + columnFamily + " is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return cfamily;
-			}
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
+	
+        Row row = readProtocol(tablename, key, columnFamily, columnSelection,
+                               StorageService.ConsistencyLevel.WEAK);
+        if (row == null)
+            throw new DataNotFoundException("No row for key: " + key);
+        
+        ColumnFamily cfamily = row.getColumnFamily( values[0] );
+        if (cfamily == null)
+            throw new DataNotFoundException("ColumnFamily " + columnFamily + " is missing.....: "
+                                            + "  key:" + key
+                                            + "  ColumnFamily:" + values[0]);
 		return cfamily;
 	}
 
-    public ArrayList<column_t> get_slice(String tablename, String key, String columnFamily_column, int start, int count) throws TException
+
+    /**
+     * Returns the collection of columns referred to by columnFamily_column.
+     * This parameter may either be just the string "cfname" or it may be
+     * "cfname:supercolumn".
+     * If the column is not found, currently returns an empty list. This
+     * may be changed to an exception in the future.
+     */
+    private Collection<IColumn> getColumns(String tablename,
+                                           String key,
+                                           String columnFamily_column,
+                                           IColumnSelection columnSelection)
+        throws TException
+    {
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
+
+        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, columnSelection);
+
+        if( values.length > 1 )
+        {
+            // this is the super column case
+            IColumn column = cfamily.getColumn(values[1]);
+            if(column != null)
+                return column.getSubColumns();
+        }
+        else
+        {
+            return cfamily.getAllColumns();
+
+        }
+
+        throw new DataNotFoundException(
+            "ERROR Columns are missing.....: "
+            + "   key:" + key
+            + "  ColumnFamily:" + values[0]);
+    }
+
+    /**
+     * Thrift method implementation
+     */
+    public ArrayList<column_t> get_slice(String tablename,
+                                         String key,
+                                         String columnFamily_column,
+                                         int start,
+                                         int count) throws TException
 	{
 		ArrayList<column_t> retlist = new ArrayList<column_t>();
         long startTime = System.currentTimeMillis();
 
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
-	        // check for  values
-	        if( values.length < 1 )
-	        	return retlist;
+        IColumnSelection columnSelection = makeSliceSelection(start, count);
 
-	        Row row = readProtocol(tablename, key, columnFamily_column, start, count, StorageService.ConsistencyLevel.WEAK);
-			if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
-
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty() )
-			{
-				logger_	.info("ERROR ColumnFamily " + columnFamily_column + " map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
-			ColumnFamily cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily " + columnFamily_column + " is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return retlist;
-			}
-			Collection<IColumn> columns = null;
-			if( values.length > 1 )
-			{
-				// this is the super column case
-				IColumn column = cfamily.getColumn(values[1]);
-				if(column != null)
-					columns = column.getSubColumns();
-			}
-			else
-			{
-				columns = cfamily.getAllColumns();
-			}
-			if (columns == null || columns.isEmpty() )
-			{
-				logger_	.info("ERROR Columns are missing.....: "
-							   + "   key:" + key
-								+ "  ColumnFamily:" + values[0]);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
-
-			for(IColumn column : columns)
-			{
-				column_t thrift_column = new column_t();
-				thrift_column.columnName = column.name();
-				thrift_column.value = new String(column.value()); // This needs to be Utf8ed
-				thrift_column.timestamp = column.timestamp();
-				retlist.add(thrift_column);
-			}
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
-
+        Collection<IColumn> cols = getColumns(tablename, key, columnFamily_column, columnSelection);
+        
+        for(IColumn column : cols)
+        {
+            retlist.add(makeThriftColumn(column));
+        }
         logger_.info("get_slice2: " + (System.currentTimeMillis() - startTime)
                 + " ms.");
 
 		return retlist;
 	}
 
+    /**
+     * Get the data in a single cell.
+     */
     public column_t get_column(String tablename, String key, String columnFamily_column) throws TException
     {
-		column_t ret = null;
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
-	        // check for  values
-	        if( values.length < 2 )
-	        	return ret;
-	        Row row = readProtocol(tablename, key, columnFamily_column, -1, Integer.MAX_VALUE, StorageService.ConsistencyLevel.WEAK);
-			if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return ret;
-			}
+        // Check format of column argument
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
 
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty() )
-			{
-				logger_	.info("ERROR ColumnFamily map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return ret;
-			}
-			ColumnFamily cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily  is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return ret;
-			}
-			Collection<IColumn> columns = null;
-			if( values.length > 2 )
-			{
-				// this is the super column case
-				IColumn column = cfamily.getColumn(values[1]);
-				if(column != null)
-					columns = column.getSubColumns();
-			}
-			else
-			{
-				columns = cfamily.getAllColumns();
-			}
-			if (columns == null || columns.isEmpty() )
-			{
-				logger_	.info("ERROR Columns are missing.....: "
-							   + "   key:" + key
-								+ "  ColumnFamily:" + values[0]);
-				// TODO: throw a thrift exception
-				return ret;
-			}
-			ret = new column_t();
-			for(IColumn column : columns)
-			{
-				ret.columnName = column.name();
-				ret.value = new String(column.value());
-				ret.timestamp = column.timestamp();
-			}
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
-		return ret;
+        if (values.length < 2)
+            throw new InvalidColumnNameException(
+                "get_column expects either 'columnFamily:column' or 'columnFamily:superCol:col'");
 
+        String columnFamilyName = values[0];
+        String columnName = values[1];
+
+        IColumnSelection sel = new ColumnListSelection(Arrays.asList(new String[] { columnName }));
+        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, sel);
+
+        IColumn col = cfamily.getColumn(columnName);
+
+        // Handle supercolumn fetches
+        if (col != null &&
+            values.length == 3) {
+            // They want a column within a supercolumn
+            try
+            {
+                SuperColumn sc = (SuperColumn)col;
+                col = sc.getSubColumn(values[2]);
+            }
+            catch (ClassCastException cce)
+            {
+                throw new InvalidColumnNameException(
+                    "Column " + values[1] + " is not a supercolumn.");
+            }
+        }
+
+        if (col == null)
+            throw new DataNotFoundException("ERROR Columns is missing.....: "
+                                            + "   key:" + key
+                                            + "  ColumnFamily:" + values[0]
+                                            + "   col: " + values[1]);
+
+        return makeThriftColumn(col);
     }
 
-
+    /**
+     * Return the number of columns in a specified column/supercolumn.
+     * If a column is referenced this will be 1. Otherwise it will be the
+     * number of columns in the supercolumn.
+     */
     public int get_column_count(String tablename, String key, String columnFamily_column)
+        throws TException
 	{
-    	int count = -1;
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
-	        // check for  values
-	        if( values.length < 1 )
-	        	return -1;
-	        Row row = readProtocol(tablename, key, columnFamily_column, -1, Integer.MAX_VALUE, StorageService.ConsistencyLevel.WEAK);
-			if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return count;
-			}
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
+        // check for  values
+        if( values.length < 1 )
+            return -1;
 
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty() )
-			{
-				logger_	.info("ERROR ColumnFamily map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return count;
-			}
-			ColumnFamily cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily  is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return count;
-			}
-			Collection<IColumn> columns = null;
-			if( values.length > 1 )
-			{
-				// this is the super column case
-				IColumn column = cfamily.getColumn(values[1]);
-				if(column != null)
-					columns = column.getSubColumns();
-			}
-			else
-			{
-				columns = cfamily.getAllColumns();
-			}
-			if (columns == null || columns.isEmpty() )
-			{
-				logger_	.info("ERROR Columns are missing.....: "
-							   + "   key:" + key
-								+ "  ColumnFamily:" + values[0]);
-				// TODO: throw a thrift exception
-				return count;
-			}
-			count = columns.size();
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
-		return count;
+        IColumnSelection selection = new AllColumnSelection();
+        Collection<IColumn> columns = getColumns(tablename, key, columnFamily_column, selection);
 
+        return columns.size();
 	}
 
     public void insert(String tablename, String key, String columnFamily_column, String cellData, int timestamp)
 	{
-
 		try
 		{
 			RowMutation rm = new RowMutation(tablename, key.trim());
@@ -668,6 +515,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		}
 		return;
 	}
+
     public boolean batch_insert_blocking(batch_mutation_t batchMutation)
     {
 		// 1. Get the N nodes from storage service where the data needs to be
@@ -776,148 +624,42 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return;
 	}
 
-    public ArrayList<superColumn_t> get_slice_super(String tablename, String key, String columnFamily_superColumnName, int start, int count)
+    public ArrayList<superColumn_t> get_slice_super(String tablename,
+                                                    String key,
+                                                    String columnFamily_superColumnName,
+                                                    int start,
+                                                    int count)
+        throws TException
     {
 		ArrayList<superColumn_t> retlist = new ArrayList<superColumn_t>();
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_superColumnName);
-	        // check for  values
-	        if( values.length < 1 )
-	        	return retlist;
-	        Row row = readProtocol(tablename, key, columnFamily_superColumnName, start, count, StorageService.ConsistencyLevel.WEAK);
-			if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
 
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty() )
-			{
-				logger_	.info("ERROR ColumnFamily map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
-			ColumnFamily cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily  is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return retlist;
-			}
-			Collection<IColumn> columns = cfamily.getAllColumns();
-			if (columns == null || columns.isEmpty() )
-			{
-				logger_	.info("ERROR Columns are missing.....: "
-							   + "   key:" + key
-								+ "  ColumnFamily:" + values[0]);
-				// TODO: throw a thrift exception
-				return retlist;
-			}
+        IColumnSelection selection = makeSliceSelection(start, count);
 
-			for(IColumn column : columns)
-			{
-				superColumn_t thrift_superColumn = new superColumn_t();
-				thrift_superColumn.name = column.name();
-				Collection<IColumn> subColumns = column.getSubColumns();
-				if( !subColumns.isEmpty() )
-				{
-					thrift_superColumn.columns = new ArrayList<column_t>();
-					for( IColumn subColumn : subColumns )
-					{
-						column_t thrift_column = new column_t();
-						thrift_column.columnName = subColumn.name();
-						thrift_column.value = new String(subColumn.value());
-						thrift_column.timestamp = subColumn.timestamp();
-						thrift_superColumn.columns.add(thrift_column);
-					}
-				}
-				retlist.add(thrift_superColumn);
-			}
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
+
+        Collection<IColumn> columns = getColumns(tablename, key, columnFamily_superColumnName, selection);
+
+        for(IColumn column : columns)
+        {
+            retlist.add(makeThriftSuperColumn(column));
+        }
 		return retlist;
-
     }
 
     public superColumn_t get_superColumn(String tablename, String key, String columnFamily_column)
+        throws TException
     {
-    	superColumn_t ret = null;
-		try
-		{
-	        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
-	        // check for  values
-	        if( values.length < 2 )
-	        	return ret;
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
+        if (values.length != 2)
+            throw new InvalidColumnNameException("get_superColumn expects column of form cfamily:supercol");
 
-	        Row row = readProtocol(tablename, key, columnFamily_column, -1, Integer.MAX_VALUE, StorageService.ConsistencyLevel.WEAK);
-			if (row == null)
-			{
-				logger_.info("ERROR No row for this key .....: " + key);
-				// TODO: throw a thrift exception
-				return ret;
-			}
+        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, new AllColumnSelection());
+        IColumn col = cfamily.getColumn(values[1]);
+        if (col == null)
+        {
+            throw new DataNotFoundException("Couldn't find column " + values[1] + " in row " + key);
+        }
 
-			Map<String, ColumnFamily> cfMap = row.getColumnFamilies();
-			if (cfMap == null || cfMap.isEmpty() )
-			{
-				logger_	.info("ERROR ColumnFamily map is missing.....: "
-							   + "   key:" + key
-								);
-				// TODO: throw a thrift exception
-				return ret;
-			}
-			ColumnFamily cfamily = cfMap.get(values[0]);
-			if (cfamily == null)
-			{
-				logger_.info("ERROR ColumnFamily  is missing.....: "
-							+"   key:" + key
-							+ "  ColumnFamily:" + values[0]);
-				return ret;
-			}
-			Collection<IColumn> columns = cfamily.getAllColumns();
-			if (columns == null || columns.isEmpty() )
-			{
-				logger_	.info("ERROR Columns are missing.....: "
-							   + "   key:" + key
-								+ "  ColumnFamily:" + values[0]);
-				// TODO: throw a thrift exception
-				return ret;
-			}
-
-			for(IColumn column : columns)
-			{
-				ret = new superColumn_t();
-				ret.name = column.name();
-				Collection<IColumn> subColumns = column.getSubColumns();
-				if( !subColumns.isEmpty() )
-				{
-					ret.columns = new ArrayList<column_t>();
-					for(IColumn subColumn : subColumns)
-					{
-						column_t thrift_column = new column_t();
-						thrift_column.columnName = subColumn.name();
-						thrift_column.value = new String(subColumn.value());
-						thrift_column.timestamp = subColumn.timestamp();
-						ret.columns.add(thrift_column);
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			logger_.info( LogUtil.throwableToString(e) );
-		}
-		return ret;
-
+        return makeThriftSuperColumn(col);
     }
 
     public boolean batch_insert_superColumn_blocking(batch_mutation_super_t batchMutationSuper)
@@ -997,6 +739,28 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return;
     }
 
+    /**
+     * Convert a Java IColumn into a column_t suitable for returning
+     */
+    private column_t makeThriftColumn(IColumn column) {
+        column_t thrift_column = new column_t();
+        thrift_column.columnName = column.name();
+        thrift_column.value = new String(column.value()); // This needs to be Utf8ed
+        thrift_column.timestamp = column.timestamp();
+        return thrift_column;
+    }
+
+    private superColumn_t makeThriftSuperColumn(IColumn column) {
+        superColumn_t ret = new superColumn_t();
+        ret.name = column.name();
+        Collection<IColumn> subColumns = column.getSubColumns();
+        ret.columns = new ArrayList<column_t>();
+        for(IColumn subColumn : subColumns)
+        {                    
+            ret.columns.add(makeThriftColumn(subColumn));
+        }
+        return ret;
+    }
 
 	public String getVersion()
 	{
@@ -1012,6 +776,110 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 	{
 		return null;
 	}
+
+
+    /**
+     * Makes an IColumnSelection implementation for a given start/count parameter.
+     */
+    private static IColumnSelection makeSliceSelection(int start, int count)
+    {
+        if( start >= 0 && count < Integer.MAX_VALUE)
+            return new ColumnRangeSelection(start, count);
+        else
+            return new AllColumnSelection();
+    }
+
+    /**
+     * Specifies a slice of a row's columns.
+     * The three implementing classes are directly below.
+     *
+     * TODO: this should probably be factored out of the thrift interface
+     * and generally used as a convenient structure in Table.java, etc
+     */
+    private static interface IColumnSelection {
+        public ReadMessage makeReadMessage(String tableName, String key, String columnfamily);
+        public Row getTableRow(Table table, String key, String columnFamily)
+            throws ColumnFamilyNotDefinedException, IOException;
+        public void doConsistencyCheck(StorageService service, Row row, List<EndPoint> endpoints, String columnFamily);
+    }
+
+    private static class ColumnRangeSelection implements IColumnSelection
+    {
+        private final int start_, count_;
+        public ColumnRangeSelection(int start, int count)
+        {
+            start_ = start;
+            count_ = count;
+        }
+
+        public ReadMessage makeReadMessage(String tableName, String key, String columnFamily)
+        {
+            return new ReadMessage(tableName, key, columnFamily, start_, count_);
+        }
+
+        public Row getTableRow(Table table, String key, String columnFamily)
+            throws ColumnFamilyNotDefinedException, IOException
+        {
+            return table.getRow(key, columnFamily, start_, count_);
+        }
+
+        public void doConsistencyCheck(StorageService service, Row row, List<EndPoint> endpoints, String columnFamily)
+        {
+            service.doConsistencyCheck(row, endpoints, columnFamily, start_, count_);
+        }
+    }
+
+    private static class AllColumnSelection implements IColumnSelection
+    {
+        public ReadMessage makeReadMessage(String tableName, String key, String columnFamily)
+        {
+            return new ReadMessage(tableName, key, columnFamily);
+        }        
+
+        public Row getTableRow(Table table, String key, String columnFamily)
+            throws ColumnFamilyNotDefinedException, IOException
+        {
+            return table.getRow(key, columnFamily);
+        }
+
+        public void doConsistencyCheck(StorageService service, Row row, List<EndPoint> endpoints, String columnFamily)
+        {
+            service.doConsistencyCheck(row, endpoints, columnFamily, -1, -1);
+        }
+    }
+
+    private static class ColumnListSelection implements IColumnSelection
+    {
+        private final List<String> columns_;
+
+        public ColumnListSelection(List<String> columns)
+        {
+            columns_ = columns;
+        }
+            
+        public ReadMessage makeReadMessage(String tableName, String key, String columnFamily)
+        {
+            return new ReadMessage(tableName, key, columnFamily, columns_);
+        }
+
+        public Row getTableRow(Table table, String key, String columnFamily)
+            throws ColumnFamilyNotDefinedException, IOException
+        {
+            return table.getRow(key, columnFamily, columns_);
+        }
+
+        public void doConsistencyCheck(StorageService service, Row row, List<EndPoint> endpoints, String columnFamily)
+        {
+            service.doConsistencyCheck(row, endpoints, columnFamily, columns_);
+        }
+    }
+
+    private static class InvalidColumnNameException extends TException {
+        InvalidColumnNameException(String s) { super(s); }
+    }
+    private static class DataNotFoundException extends TException {
+        DataNotFoundException(String s) { super(s); }
+    }
 
 	public static void main(String[] args) throws Throwable
 	{

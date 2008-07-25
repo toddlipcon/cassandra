@@ -40,9 +40,16 @@ struct batch_mutation_super_t {
    3: superColumn_family_map        cfmap,
 }
 
-
+/**
+ * Interface to Cassandra.
+ *
+ * In all cases, "columnFamily_column" strings refer to the specification of
+ * a (column_family, column) tuple written in the form "cf:colname". For the
+ * case of a supercolumn, the string takes the form "cf:supercol:col".
+ */
 service Cassandra extends fb303.FacebookService 
 {
+
   list<column_t>	get_slice(string tablename,string key,string columnFamily_column, i32 start = -1 , i32 count = -1),
 
   column_t       	get_column(string tablename,string key,string columnFamily_column),

@@ -90,6 +90,14 @@ public class Row implements Serializable
         size_.addAndGet(delta);
     }
 
+    /**
+     * Returns the given ColumnFamily in this row. Returns null if the
+     * family does not exist.
+     */
+    public ColumnFamily getColumnFamily(String cf) {
+        return columnFamilies_.get( cf );
+    }
+
     int size()
     {
         return size_.get();
