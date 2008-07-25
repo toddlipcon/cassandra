@@ -2020,12 +2020,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public boolean isInTopN(String key)
     {
     	EndPoint[] topN = getNStorageEndPoint(key);
-        for ( EndPoint ep : topN )
-        {
-            if ( ep.equals( StorageService.tcpAddr_ ) )
-                return true;
-        }
-        return false;
+        return Arrays.asList(topN).contains( StorageService.tcpAddr_ );
     }
     
     /**
