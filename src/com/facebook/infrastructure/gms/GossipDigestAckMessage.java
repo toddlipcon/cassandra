@@ -70,6 +70,26 @@ class GossipDigestAckMessage
     {
         return epStateMap_;
     }
+
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("GDAM{gds=[");
+        for (GossipDigest gd : gDigestList_) {
+            sb.append("GD{");
+            sb.append(gd.toString());
+            sb.append("}");
+        }
+        sb.append("] EPMAP=[");
+
+        for (Map.Entry<EndPoint, EndPointState> entry : epStateMap_.entrySet())
+        {
+            sb.append("(EP{").append(entry.getKey().toString()).append("}");
+            sb.append(" => ").append("EPS{").append(entry.getValue().toString()).append("})");
+        }
+        sb.append("]}");
+        return sb.toString();
+    }
 }
 
 class GossipDigestAckMessageSerializer implements ICompactSerializer<GossipDigestAckMessage>
