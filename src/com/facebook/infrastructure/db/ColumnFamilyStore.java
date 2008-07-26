@@ -577,7 +577,7 @@ public class ColumnFamilyStore
 	            if (columnFamily != null)
 	            {
 	                /* suppress columns marked for delete */
-	                Map<String, IColumn> columns = columnFamily.getColumns();
+	                Map<String, IColumn> columns = columnFamily.getColumnMap();
 
                     for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
                     {

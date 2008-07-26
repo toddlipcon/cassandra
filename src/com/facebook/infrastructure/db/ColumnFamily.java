@@ -180,7 +180,7 @@ public final class ColumnFamily implements Serializable
     */
     void addColumns(ColumnFamily cf)
     {
-        Map<String, IColumn> columns = cf.getColumns();
+        Map<String, IColumn> columns = cf.getColumnMap();
         for ( Map.Entry<String, IColumn> entry : columns.entrySet())
         {
             addColumn(entry.getKey(), entry.getValue());
@@ -202,7 +202,7 @@ public final class ColumnFamily implements Serializable
     int getColumnCount()
     {
     	int count = 0;
-    	Set<IColumn> columns = columns_.getSortedColumns();
+    	Collection<IColumn> columns = columns_.getColumns();
     	if( columns != null )
     	{
 	    	for(IColumn column: columns)
@@ -268,9 +268,9 @@ public final class ColumnFamily implements Serializable
         return columns_.getSortedColumns();
     }
 
-    Map<String, IColumn> getColumns()
+    Map<String, IColumn> getColumnMap()
     {
-        return columns_.getColumns();
+        return columns_.getColumnMap();
     }
 
     public void remove(String columnName)
@@ -297,7 +297,7 @@ public final class ColumnFamily implements Serializable
     */
     void merge(ColumnFamily columnFamily)
     {
-        Map<String, IColumn> columns = columnFamily.getColumns();
+        Map<String, IColumn> columns = columnFamily.getColumnMap();
 
         for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
@@ -316,7 +316,7 @@ public final class ColumnFamily implements Serializable
      */
     void repair(ColumnFamily columnFamily)
     {
-        Map<String, IColumn> columns = columnFamily.getColumns();
+        Map<String, IColumn> columns = columnFamily.getColumnMap();
 
         for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
@@ -350,7 +350,7 @@ public final class ColumnFamily implements Serializable
     ColumnFamily diff(ColumnFamily columnFamily)
     {
     	ColumnFamily cfDiff = new ColumnFamily(columnFamily.name());
-        Map<String, IColumn> columns = columnFamily.getColumns();
+        Map<String, IColumn> columns = columnFamily.getColumnMap();
 
         for ( Map.Entry<String, IColumn> entry : columns.entrySet() )
         {
@@ -371,7 +371,7 @@ public final class ColumnFamily implements Serializable
         		}
         	}
         }
-        if(!cfDiff.getColumns().isEmpty())
+        if(!cfDiff.getColumnMap().isEmpty())
         	return cfDiff;
         else
         	return null;
@@ -381,7 +381,7 @@ public final class ColumnFamily implements Serializable
     {
         if ( size_.get() == 0 )
         {
-            for ( Map.Entry<String, IColumn> entry : columns_.getColumns().entrySet() )
+            for ( Map.Entry<String, IColumn> entry : columns_.getColumnMap().entrySet() )
             {
                 size_.addAndGet(entry.getValue().size());
             }
