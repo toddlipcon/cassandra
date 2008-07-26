@@ -26,6 +26,9 @@ class Iface(fb303.FacebookService.Iface):
   def get_column_count(self, tablename, key, columnFamily_column):
     pass
 
+  def insert_blocking(self, tablename, key, columnFamily_column, cellData, timestamp):
+    pass
+
   def insert(self, tablename, key, columnFamily_column, cellData, timestamp):
     pass
 
@@ -140,6 +143,34 @@ class Client(fb303.FacebookService.Client, Iface):
     if result.success != None:
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "get_column_count failed: unknown result");
+
+  def insert_blocking(self, tablename, key, columnFamily_column, cellData, timestamp):
+    self.send_insert_blocking(tablename, key, columnFamily_column, cellData, timestamp)
+    self.recv_insert_blocking()
+
+  def send_insert_blocking(self, tablename, key, columnFamily_column, cellData, timestamp):
+    self._oprot.writeMessageBegin('insert_blocking', TMessageType.CALL, self._seqid)
+    args = insert_blocking_args()
+    args.tablename = tablename
+    args.key = key
+    args.columnFamily_column = columnFamily_column
+    args.cellData = cellData
+    args.timestamp = timestamp
+    args.write(self._oprot)
+    self._oprot.writeMessageEnd()
+    self._oprot.trans.flush()
+
+  def recv_insert_blocking(self, ):
+    (fname, mtype, rseqid) = self._iprot.readMessageBegin()
+    if mtype == TMessageType.EXCEPTION:
+      x = TApplicationException()
+      x.read(self._iprot)
+      self._iprot.readMessageEnd()
+      raise x
+    result = insert_blocking_result()
+    result.read(self._iprot)
+    self._iprot.readMessageEnd()
+    return
 
   def insert(self, tablename, key, columnFamily_column, cellData, timestamp):
     self.send_insert(tablename, key, columnFamily_column, cellData, timestamp)
@@ -304,6 +335,7 @@ class Processor(fb303.FacebookService.Processor, Iface, TProcessor):
     self._processMap["get_slice"] = Processor.process_get_slice
     self._processMap["get_column"] = Processor.process_get_column
     self._processMap["get_column_count"] = Processor.process_get_column_count
+    self._processMap["insert_blocking"] = Processor.process_insert_blocking
     self._processMap["insert"] = Processor.process_insert
     self._processMap["batch_insert"] = Processor.process_batch_insert
     self._processMap["batch_insert_blocking"] = Processor.process_batch_insert_blocking
@@ -357,6 +389,17 @@ class Processor(fb303.FacebookService.Processor, Iface, TProcessor):
     result = get_column_count_result()
     result.success = self._handler.get_column_count(args.tablename, args.key, args.columnFamily_column)
     oprot.writeMessageBegin("get_column_count", TMessageType.REPLY, seqid)
+    result.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
+
+  def process_insert_blocking(self, seqid, iprot, oprot):
+    args = insert_blocking_args()
+    args.read(iprot)
+    iprot.readMessageEnd()
+    result = insert_blocking_result()
+    self._handler.insert_blocking(args.tablename, args.key, args.columnFamily_column, args.cellData, args.timestamp)
+    oprot.writeMessageBegin("insert_blocking", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -524,10 +567,10 @@ class get_slice_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -588,10 +631,10 @@ class get_slice_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -664,10 +707,10 @@ class get_column_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -720,10 +763,10 @@ class get_column_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -796,10 +839,10 @@ class get_column_count_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -851,10 +894,152 @@ class get_column_count_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+  def __ne__(self, other):
+    return not (self == other)
+
+class insert_blocking_args:
+
+  thrift_spec = None
+  def __init__(self, d=None):
+    self.tablename = None
+    self.key = None
+    self.columnFamily_column = None
+    self.cellData = None
+    self.timestamp = None
+    if isinstance(d, dict):
+      if 'tablename' in d:
+        self.tablename = d['tablename']
+      if 'key' in d:
+        self.key = d['key']
+      if 'columnFamily_column' in d:
+        self.columnFamily_column = d['columnFamily_column']
+      if 'cellData' in d:
+        self.cellData = d['cellData']
+      if 'timestamp' in d:
+        self.timestamp = d['timestamp']
+
+  def read(self, iprot):
+    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+      return
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == -1:
+        if ftype == TType.STRING:
+          self.tablename = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == -2:
+        if ftype == TType.STRING:
+          self.key = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == -3:
+        if ftype == TType.STRING:
+          self.columnFamily_column = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == -4:
+        if ftype == TType.STRING:
+          self.cellData = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == -5:
+        if ftype == TType.I32:
+          self.timestamp = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+      return
+    oprot.writeStructBegin('insert_blocking_args')
+    if self.tablename != None:
+      oprot.writeFieldBegin('tablename', TType.STRING, -1)
+      oprot.writeString(self.tablename)
+      oprot.writeFieldEnd()
+    if self.key != None:
+      oprot.writeFieldBegin('key', TType.STRING, -2)
+      oprot.writeString(self.key)
+      oprot.writeFieldEnd()
+    if self.columnFamily_column != None:
+      oprot.writeFieldBegin('columnFamily_column', TType.STRING, -3)
+      oprot.writeString(self.columnFamily_column)
+      oprot.writeFieldEnd()
+    if self.cellData != None:
+      oprot.writeFieldBegin('cellData', TType.STRING, -4)
+      oprot.writeString(self.cellData)
+      oprot.writeFieldEnd()
+    if self.timestamp != None:
+      oprot.writeFieldBegin('timestamp', TType.I32, -5)
+      oprot.writeI32(self.timestamp)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+  def __ne__(self, other):
+    return not (self == other)
+
+class insert_blocking_result:
+
+  thrift_spec = (
+  )
+
+  def __init__(self, d=None):
+    pass
+
+  def read(self, iprot):
+    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+      return
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+      return
+    oprot.writeStructBegin('insert_blocking_result')
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -951,10 +1136,10 @@ class insert_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -993,10 +1178,10 @@ class insert_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1046,10 +1231,10 @@ class batch_insert_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1088,10 +1273,10 @@ class batch_insert_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1141,10 +1326,10 @@ class batch_insert_blocking_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1196,10 +1381,10 @@ class batch_insert_blocking_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1272,10 +1457,10 @@ class remove_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1314,10 +1499,10 @@ class remove_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1414,10 +1599,10 @@ class get_slice_super_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1478,10 +1663,10 @@ class get_slice_super_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1554,10 +1739,10 @@ class get_superColumn_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1610,10 +1795,10 @@ class get_superColumn_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1663,10 +1848,10 @@ class batch_insert_superColumn_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1705,10 +1890,10 @@ class batch_insert_superColumn_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1758,10 +1943,10 @@ class batch_insert_superColumn_blocking_args:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):
@@ -1813,10 +1998,10 @@ class batch_insert_superColumn_blocking_result:
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
-  def __str__(self):
+  def __str__(self): 
     return str(self.__dict__)
 
-  def __repr__(self):
+  def __repr__(self): 
     return repr(self.__dict__)
 
   def __eq__(self, other):

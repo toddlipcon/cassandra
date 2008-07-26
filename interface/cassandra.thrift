@@ -56,6 +56,7 @@ service Cassandra extends fb303.FacebookService
 
   i32            	get_column_count(string tablename,string key,string columnFamily_column),
 
+  void 	        	insert_blocking(string tablename,string key,string columnFamily_column, string cellData,i32 timestamp),
   async void     	insert(string tablename,string key,string columnFamily_column, string cellData,i32 timestamp),
 
   async void     	batch_insert(batch_mutation_t batchMutation),

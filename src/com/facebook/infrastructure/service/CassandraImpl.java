@@ -516,6 +516,12 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return;
 	}
 
+    public void insert_blocking(String tablename, String key, String columnFamily_column, String cellData, int timestamp)
+    {
+        insert(tablename, key, columnFamily_column, cellData, timestamp);
+        // TODO: return some kind of status from this call
+    }
+
     public boolean batch_insert_blocking(batch_mutation_t batchMutation)
     {
 		// 1. Get the N nodes from storage service where the data needs to be

@@ -18,6 +18,13 @@ import com.facebook.thrift.transport.*;
 
 public class Cassandra {
 
+  /**
+   * Interface to Cassandra.
+   * 
+   * In all cases, "columnFamily_column" strings refer to the specification of
+   * a (column_family, column) tuple written in the form "cf:colname". For the
+   * case of a supercolumn, the string takes the form "cf:supercol:col".
+   */
   public interface Iface extends com.facebook.fb303.FacebookService.Iface {
 
     public List<column_t> get_slice(String tablename, String key, String columnFamily_column, int start, int count) throws TException;
@@ -25,6 +32,8 @@ public class Cassandra {
     public column_t get_column(String tablename, String key, String columnFamily_column) throws TException;
 
     public int get_column_count(String tablename, String key, String columnFamily_column) throws TException;
+
+    public void insert_blocking(String tablename, String key, String columnFamily_column, String cellData, int timestamp) throws TException;
 
     public void insert(String tablename, String key, String columnFamily_column, String cellData, int timestamp) throws TException;
 
@@ -160,6 +169,40 @@ public class Cassandra {
         return result.success;
       }
       throw new TApplicationException(TApplicationException.MISSING_RESULT, "get_column_count failed: unknown result");
+    }
+
+    public void insert_blocking(String tablename, String key, String columnFamily_column, String cellData, int timestamp) throws TException
+    {
+      send_insert_blocking(tablename, key, columnFamily_column, cellData, timestamp);
+      recv_insert_blocking();
+    }
+
+    public void send_insert_blocking(String tablename, String key, String columnFamily_column, String cellData, int timestamp) throws TException
+    {
+      oprot_.writeMessageBegin(new TMessage("insert_blocking", TMessageType.CALL, seqid_));
+      insert_blocking_args args = new insert_blocking_args();
+      args.tablename = tablename;
+      args.key = key;
+      args.columnFamily_column = columnFamily_column;
+      args.cellData = cellData;
+      args.timestamp = timestamp;
+      args.write(oprot_);
+      oprot_.writeMessageEnd();
+      oprot_.getTransport().flush();
+    }
+
+    public void recv_insert_blocking() throws TException
+    {
+      TMessage msg = iprot_.readMessageBegin();
+      if (msg.type == TMessageType.EXCEPTION) {
+        TApplicationException x = TApplicationException.read(iprot_);
+        iprot_.readMessageEnd();
+        throw x;
+      }
+      insert_blocking_result result = new insert_blocking_result();
+      result.read(iprot_);
+      iprot_.readMessageEnd();
+      return;
     }
 
     public void insert(String tablename, String key, String columnFamily_column, String cellData, int timestamp) throws TException
@@ -375,6 +418,7 @@ public class Cassandra {
       processMap_.put("get_slice", new get_slice());
       processMap_.put("get_column", new get_column());
       processMap_.put("get_column_count", new get_column_count());
+      processMap_.put("insert_blocking", new insert_blocking());
       processMap_.put("insert", new insert());
       processMap_.put("batch_insert", new batch_insert());
       processMap_.put("batch_insert_blocking", new batch_insert_blocking());
@@ -449,6 +493,22 @@ public class Cassandra {
         result.success = iface_.get_column_count(args.tablename, args.key, args.columnFamily_column);
         result.__isset.success = true;
         oprot.writeMessageBegin(new TMessage("get_column_count", TMessageType.REPLY, seqid));
+        result.write(oprot);
+        oprot.writeMessageEnd();
+        oprot.getTransport().flush();
+      }
+
+    }
+
+    private class insert_blocking implements ProcessFunction {
+      public void process(int seqid, TProtocol iprot, TProtocol oprot) throws TException
+      {
+        insert_blocking_args args = new insert_blocking_args();
+        args.read(iprot);
+        iprot.readMessageEnd();
+        insert_blocking_result result = new insert_blocking_result();
+        iface_.insert_blocking(args.tablename, args.key, args.columnFamily_column, args.cellData, args.timestamp);
+        oprot.writeMessageBegin(new TMessage("insert_blocking", TMessageType.REPLY, seqid));
         result.write(oprot);
         oprot.writeMessageEnd();
         oprot.getTransport().flush();
@@ -1451,6 +1511,292 @@ public class Cassandra {
       StringBuilder sb = new StringBuilder("get_column_count_result(");
       sb.append("success:");
       sb.append(this.success);
+      sb.append(")");
+      return sb.toString();
+    }
+
+  }
+
+  public static class insert_blocking_args implements TBase, java.io.Serializable   {
+    public String tablename;
+    public String key;
+    public String columnFamily_column;
+    public String cellData;
+    public int timestamp;
+
+    public final Isset __isset = new Isset();
+    public static final class Isset implements java.io.Serializable {
+      public boolean tablename = false;
+      public boolean key = false;
+      public boolean columnFamily_column = false;
+      public boolean cellData = false;
+      public boolean timestamp = false;
+    }
+
+    public insert_blocking_args() {
+    }
+
+    public insert_blocking_args(
+      String tablename,
+      String key,
+      String columnFamily_column,
+      String cellData,
+      int timestamp)
+    {
+      this();
+      this.tablename = tablename;
+      this.__isset.tablename = true;
+      this.key = key;
+      this.__isset.key = true;
+      this.columnFamily_column = columnFamily_column;
+      this.__isset.columnFamily_column = true;
+      this.cellData = cellData;
+      this.__isset.cellData = true;
+      this.timestamp = timestamp;
+      this.__isset.timestamp = true;
+    }
+
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof insert_blocking_args)
+        return this.equals((insert_blocking_args)that);
+      return false;
+    }
+
+    public boolean equals(insert_blocking_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_tablename = true && (this.tablename != null);
+      boolean that_present_tablename = true && (that.tablename != null);
+      if (this_present_tablename || that_present_tablename) {
+        if (!(this_present_tablename && that_present_tablename))
+          return false;
+        if (!this.tablename.equals(that.tablename))
+          return false;
+      }
+
+      boolean this_present_key = true && (this.key != null);
+      boolean that_present_key = true && (that.key != null);
+      if (this_present_key || that_present_key) {
+        if (!(this_present_key && that_present_key))
+          return false;
+        if (!this.key.equals(that.key))
+          return false;
+      }
+
+      boolean this_present_columnFamily_column = true && (this.columnFamily_column != null);
+      boolean that_present_columnFamily_column = true && (that.columnFamily_column != null);
+      if (this_present_columnFamily_column || that_present_columnFamily_column) {
+        if (!(this_present_columnFamily_column && that_present_columnFamily_column))
+          return false;
+        if (!this.columnFamily_column.equals(that.columnFamily_column))
+          return false;
+      }
+
+      boolean this_present_cellData = true && (this.cellData != null);
+      boolean that_present_cellData = true && (that.cellData != null);
+      if (this_present_cellData || that_present_cellData) {
+        if (!(this_present_cellData && that_present_cellData))
+          return false;
+        if (!this.cellData.equals(that.cellData))
+          return false;
+      }
+
+      boolean this_present_timestamp = true;
+      boolean that_present_timestamp = true;
+      if (this_present_timestamp || that_present_timestamp) {
+        if (!(this_present_timestamp && that_present_timestamp))
+          return false;
+        if (this.timestamp != that.timestamp)
+          return false;
+      }
+
+      return true;
+    }
+
+    public int hashCode() {
+      return 0;
+    }
+
+    public void read(TProtocol iprot) throws TException {
+      TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == TType.STOP) { 
+          break;
+        }
+        switch (field.id)
+        {
+          case -1:
+            if (field.type == TType.STRING) {
+              this.tablename = iprot.readString();
+              this.__isset.tablename = true;
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case -2:
+            if (field.type == TType.STRING) {
+              this.key = iprot.readString();
+              this.__isset.key = true;
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case -3:
+            if (field.type == TType.STRING) {
+              this.columnFamily_column = iprot.readString();
+              this.__isset.columnFamily_column = true;
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case -4:
+            if (field.type == TType.STRING) {
+              this.cellData = iprot.readString();
+              this.__isset.cellData = true;
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case -5:
+            if (field.type == TType.I32) {
+              this.timestamp = iprot.readI32();
+              this.__isset.timestamp = true;
+            } else { 
+              TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            TProtocolUtil.skip(iprot, field.type);
+            break;
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+    }
+
+    public void write(TProtocol oprot) throws TException {
+      TStruct struct = new TStruct("insert_blocking_args");
+      oprot.writeStructBegin(struct);
+      TField field = new TField();
+      if (this.tablename != null) {
+        field.name = "tablename";
+        field.type = TType.STRING;
+        field.id = -1;
+        oprot.writeFieldBegin(field);
+        oprot.writeString(this.tablename);
+        oprot.writeFieldEnd();
+      }
+      if (this.key != null) {
+        field.name = "key";
+        field.type = TType.STRING;
+        field.id = -2;
+        oprot.writeFieldBegin(field);
+        oprot.writeString(this.key);
+        oprot.writeFieldEnd();
+      }
+      if (this.columnFamily_column != null) {
+        field.name = "columnFamily_column";
+        field.type = TType.STRING;
+        field.id = -3;
+        oprot.writeFieldBegin(field);
+        oprot.writeString(this.columnFamily_column);
+        oprot.writeFieldEnd();
+      }
+      if (this.cellData != null) {
+        field.name = "cellData";
+        field.type = TType.STRING;
+        field.id = -4;
+        oprot.writeFieldBegin(field);
+        oprot.writeString(this.cellData);
+        oprot.writeFieldEnd();
+      }
+      field.name = "timestamp";
+      field.type = TType.I32;
+      field.id = -5;
+      oprot.writeFieldBegin(field);
+      oprot.writeI32(this.timestamp);
+      oprot.writeFieldEnd();
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("insert_blocking_args(");
+      sb.append("tablename:");
+      sb.append(this.tablename);
+      sb.append(",key:");
+      sb.append(this.key);
+      sb.append(",columnFamily_column:");
+      sb.append(this.columnFamily_column);
+      sb.append(",cellData:");
+      sb.append(this.cellData);
+      sb.append(",timestamp:");
+      sb.append(this.timestamp);
+      sb.append(")");
+      return sb.toString();
+    }
+
+  }
+
+  public static class insert_blocking_result implements TBase, java.io.Serializable   {
+    public insert_blocking_result() {
+    }
+
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof insert_blocking_result)
+        return this.equals((insert_blocking_result)that);
+      return false;
+    }
+
+    public boolean equals(insert_blocking_result that) {
+      if (that == null)
+        return false;
+
+      return true;
+    }
+
+    public int hashCode() {
+      return 0;
+    }
+
+    public void read(TProtocol iprot) throws TException {
+      TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == TType.STOP) { 
+          break;
+        }
+        switch (field.id)
+        {
+          default:
+            TProtocolUtil.skip(iprot, field.type);
+            break;
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+    }
+
+    public void write(TProtocol oprot) throws TException {
+      TStruct struct = new TStruct("insert_blocking_result");
+      oprot.writeStructBegin(struct);
+
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("insert_blocking_result(");
       sb.append(")");
       return sb.toString();
     }

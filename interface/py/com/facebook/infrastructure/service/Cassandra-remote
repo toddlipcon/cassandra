@@ -24,6 +24,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '   get_slice(string tablename, string key, string columnFamily_column, i32 start, i32 count)'
   print '  column_t get_column(string tablename, string key, string columnFamily_column)'
   print '  i32 get_column_count(string tablename, string key, string columnFamily_column)'
+  print '  void insert_blocking(string tablename, string key, string columnFamily_column, string cellData, i32 timestamp)'
   print '  void insert(string tablename, string key, string columnFamily_column, string cellData, i32 timestamp)'
   print '  void batch_insert(batch_mutation_t batchMutation)'
   print '  bool batch_insert_blocking(batch_mutation_t batchMutation)'
@@ -97,6 +98,12 @@ elif cmd == 'get_column_count':
     print 'get_column_count requires 3 args'
     sys.exit(1)
   pp.pprint(client.get_column_count(args[0],args[1],args[2],))
+
+elif cmd == 'insert_blocking':
+  if len(args) != 5:
+    print 'insert_blocking requires 5 args'
+    sys.exit(1)
+  pp.pprint(client.insert_blocking(args[0],args[1],args[2],args[3],eval(args[4]),))
 
 elif cmd == 'insert':
   if len(args) != 5:
