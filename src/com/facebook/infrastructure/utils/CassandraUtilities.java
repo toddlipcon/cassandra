@@ -141,8 +141,9 @@ public class CassandraUtilities
     {
 	if ( host_ == null )
 	{
-		host_ = getLocalAddress().getHostName();
+		host_ = getLocalAddress().getCanonicalHostName();
 	}
+    
 	return host_;
     }
 
