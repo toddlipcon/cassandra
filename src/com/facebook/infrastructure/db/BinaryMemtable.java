@@ -42,15 +42,31 @@ import com.facebook.infrastructure.utils.BloomFilter;
 public class BinaryMemtable implements MemtableMBean
 {
     private static Logger logger_ = Logger.getLogger( Memtable.class );
+
+    /* The number of bytes of key/value data to accept before forcing a flush */
     private int threshold_ = 512*1024*1024;
+
+    /* The current number of bytes of key/value data held */
     private AtomicInteger currentSize_ = new AtomicInteger(0);
 
     /* Table and ColumnFamily name are used to determine the ColumnFamilyStore */
     private String table_;
     private String cfName_;
+
+    /**
+     * When this memtable reaches its flush threshold, put() causes it to be frozen,
+     * which disallows any further writes while it's being flushed.
+     */
     private boolean isFrozen_ = false;
+
+    /**
+     * The mapping of row key to data for that row. This is the analogue of the
+     * columnFamilies_ member variable in the Memtable class, except we store the
+     * pre-serialized column family data.
+     */
     private Map<String, byte[]> columnFamilies_ = new NonBlockingHashMap<String, byte[]>();
-    /* Lock and Condition for notifying new clients about Memtable switches */
+
+    /* Lock so that multiple writers don't try to initiate a flush at the same time */
     Lock lock_ = new ReentrantLock();
 
     BinaryMemtable(String table, String cfName) throws IOException
@@ -106,6 +122,9 @@ public class BinaryMemtable implements MemtableMBean
                 }
                 else
                 {
+                    // Another thread has violated the threshold and told the cfStore to switch
+                    // to a new binary memtable. We forward the put on to the newly swapped in
+                    // replacement.
                     cfStore.applyBinary(key, buffer);
                 }
             }
@@ -128,7 +147,7 @@ public class BinaryMemtable implements MemtableMBean
 
 
     /*
-     * 
+     * Flush the memtable into an SSTable on disk
     */
     void flush() throws IOException
     {
