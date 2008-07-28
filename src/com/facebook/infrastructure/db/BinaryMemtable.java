@@ -52,11 +52,9 @@ public class BinaryMemtable implements MemtableMBean
     private Map<String, byte[]> columnFamilies_ = new NonBlockingHashMap<String, byte[]>();
     /* Lock and Condition for notifying new clients about Memtable switches */
     Lock lock_ = new ReentrantLock();
-    Condition condition_;
 
     BinaryMemtable(String table, String cfName) throws IOException
     {
-        condition_ = lock_.newCondition();
         table_ = table;
         cfName_ = cfName;
     }
