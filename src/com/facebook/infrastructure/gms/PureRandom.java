@@ -48,7 +48,7 @@ class PureRandom extends Random
             BitSet bs = new BitSet();
             bs.or(bs_);
             bs_.clear();
-            bs_ = bs_;
+            bs_ = bs;
             lastUb_ = ub;
         }
         
