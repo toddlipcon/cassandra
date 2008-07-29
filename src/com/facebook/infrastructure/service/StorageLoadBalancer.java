@@ -183,7 +183,7 @@ final class StorageLoadBalancer implements IEndPointStateChangeSubscriber, IComp
             try
             {
                 /* Store the new token in the SystemTable */
-                StorageService.instance().updateToken(targetToken_);
+                StorageService.instance().updateLocalToken(targetToken_);
                 /* Perform the "leave" operations which involves streaming relevant data */
             }
             catch (Throwable ex)

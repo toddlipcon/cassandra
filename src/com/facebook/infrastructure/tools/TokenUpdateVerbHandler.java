@@ -55,7 +55,7 @@ public class TokenUpdateVerbHandler implements IVerbHandler
             
             BigInteger token = tiMessage.getToken();
             logger_.info("Updating the token to [" + token + "]");
-            StorageService.instance().updateToken(token);
+            StorageService.instance().updateLocalToken(token);
             
             /* Get the headers for this message */
             Map<String, byte[]> headers = message.getHeaders();

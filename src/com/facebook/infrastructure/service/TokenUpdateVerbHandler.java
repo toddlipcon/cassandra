@@ -41,7 +41,7 @@ public class TokenUpdateVerbHandler implements IVerbHandler
         try
         {
         	logger_.info("Updating the token to [" + token + "]");
-        	StorageService.instance().updateToken(token);
+        	StorageService.instance().updateLocalToken(token);
         }
     	catch( IOException ex )
     	{

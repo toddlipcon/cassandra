@@ -1082,11 +1082,6 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     {
         return tokenMetadata_.get();
     }
-
-    IEndPointSnitch getEndPointSnitch()
-    {
-    	return endPointSnitch_;
-    }
     
     /*
      * Given an EndPoint this method will report if the
@@ -1174,6 +1169,12 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         }
         logger_.debug("Done constructing range to endpoint map ...");
         return rangeToEndPointMap;
+    }
+
+    public Map<Range, List<EndPoint>> getRangeToEndPointMap()
+    {
+        TokenMetadata tmd = tokenMetadata_.get();
+        return constructRangeToEndPointMap(tmd.getRanges(), tmd);
     }
     
     /**
