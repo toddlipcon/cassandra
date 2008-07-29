@@ -141,10 +141,13 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     private void updateTokenMetadata(BigInteger token, EndPoint endpoint)
     {
+        // Make sure endpoints in the TMD are always storage port
+        EndPoint checkedPortEp = new EndPoint(endpoint.getHost(),
+                                              DatabaseDescriptor.getStoragePort());
         while( true )
         {
             TokenMetadata oldTM = tokenMetadata_.get();
-            TokenMetadata newTM = oldTM.update(token, endpoint);
+            TokenMetadata newTM = oldTM.update(token, checkedPortEp);
             if( tokenMetadata_.compareAndSet(oldTM, newTM) )
                 return;
         }
@@ -1190,8 +1193,8 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         Set<EndPoint> mbrs = Gossiper.instance().getAllMembers();
         for ( EndPoint mbr : mbrs )
         {
-            mbr.setPort(DatabaseDescriptor.getStoragePort());
-            endPointToRangesMap.put(mbr, getRangesForEndPoint(mbr));
+            EndPoint storageEp = new EndPoint(mbr.getHost(), DatabaseDescriptor.getStoragePort());
+            endPointToRangesMap.put(storageEp, getRangesForEndPoint(storageEp));
         }
         return endPointToRangesMap;
     }
@@ -1239,13 +1242,13 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         int index = 0;
         for ( EndPoint ep : endPointToRangesMap.keySet() )
         {
-            /* reset the port back to control port */
-            ep.setPort(DatabaseDescriptor.getControlPort());
+            EndPoint controlEp = new EndPoint(ep.getHost(),
+                                              DatabaseDescriptor.getControlPort());
             String lInfo = null;
-            if ( ep.equals(StorageService.udpAddr_) )
+            if ( controlEp.equals(StorageService.udpAddr_) )
                 lInfo = getLoadInfo();
             else                
-                lInfo = getLoadInfo(ep);
+                lInfo = getLoadInfo(controlEp);
             LoadInfo li = new LoadInfo(lInfo);
             constants[index++] = FileUtils.stringToFileSize(li.diskSpace());
         }
@@ -1395,19 +1398,19 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         
         for ( EndPoint mbr : allMbrs )
         {
-            mbr.setPort(DatabaseDescriptor.getStoragePort());
+            EndPoint storageEp = new EndPoint(mbr.getHost(), DatabaseDescriptor.getStoragePort());
             LoadInfo li = null;
-            if ( mbr.equals(StorageService.tcpAddr_) )
+            if ( storageEp.equals(StorageService.tcpAddr_) )
             {
                 li = new LoadInfo( getLoadInfo() );
                 lInfos.add( li );
             }
             else
             {
-                li = storageLoadBalancer_.getLoad(mbr);
+                li = storageLoadBalancer_.getLoad(storageEp);
                 lInfos.add( li );
             }
-            loadInfoToEndPointMap.put(li, mbr);
+            loadInfoToEndPointMap.put(li, storageEp);
         }
         
         Collections.sort(lInfos, new LoadInfo.PrimaryCountComparator());

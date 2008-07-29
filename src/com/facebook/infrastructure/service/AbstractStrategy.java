@@ -38,17 +38,20 @@ abstract class AbstractStrategy implements IReplicaPlacementStrategy
     private static Logger logger_ = Logger.getLogger(AbstractStrategy.class);
 
     /*
-     * This method changes the ports of the endpoints from
+     * This method used to change the ports of the endpoints from
      * the control port to the storage ports.
      *
-     * TODO: this mutability is bad! There might be a serious race here now
-     * that there aren't clones when reading TokenMetadata
+     * Instead we now just *check* that they're all storage ports, since
+     * there should be no way for any other port to make it into the TokenMetadata.
+     *
+     * TODO: once we're satisfied this is safe we can remove this.
     */
     protected void retrofitPorts(List<EndPoint> eps)
     {
         for ( EndPoint ep : eps )
         {
-            ep.setPort(DatabaseDescriptor.getStoragePort());
+            if ( ep.getPort() != DatabaseDescriptor.getStoragePort() )
+                throw new RuntimeException("An Endpoint with a non-storage port came from TMD");
         }
     }
 
