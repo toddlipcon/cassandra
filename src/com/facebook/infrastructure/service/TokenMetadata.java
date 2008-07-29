@@ -169,7 +169,7 @@ public class TokenMetadata
         // If the last key less than token is the last key of the map total, then
         // we are greater than all keys in the map. Therefore the lowest node in the
         // ring is responsible.
-        if ( head.lastKey().equals( tokenToEndPointMap_.lastKey() ) )
+        if ( !head.isEmpty() && head.lastKey().equals( tokenToEndPointMap_.lastKey() ) )
         {
             return 0;
         }
