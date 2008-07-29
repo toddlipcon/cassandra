@@ -558,11 +558,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			}
 
 			RowMutationMessage rmMsg = new RowMutationMessage(rm);
-			Message message = new Message(StorageService.getLocalStorageEndPoint(),
-                    StorageService.mutationStage_,
-					StorageService.mutationVerbHandler_,
-                    new Object[]{ rmMsg }
-            );
+            Message message = RowMutationMessage.makeRowMutationMessage(rmMsg);
 			MessagingService.getMessagingInstance().sendRR(message, endpoints,
 					quorumResponseHandler);
 			logger_.debug(" Calling quorum response handler's get");
