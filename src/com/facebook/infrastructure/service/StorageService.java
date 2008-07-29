@@ -867,6 +867,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         init();
         uptime_ = System.currentTimeMillis();
         storageLoadBalancer_ = new StorageLoadBalancer(this);
+        endPointSnitch_ = new EndPointSnitch();
         
         /* register the verb handlers */
         MessagingService.getMessagingInstance().registerVerbHandlers(StorageService.tokenVerbHandler_, new TokenUpdateVerbHandler());
