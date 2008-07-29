@@ -323,6 +323,12 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 	{
 		long startTime = System.currentTimeMillis();
 		List<EndPoint> endpoints = storageService_.getNLiveStorageEndPoint(key);
+
+    logger_.debug("Endpoints: ");
+    for (EndPoint ep : endpoints)
+    {
+      logger_.debug("   " + String.valueOf(ep));
+    }
 		/* Remove the local storage endpoint from the list. */
 		endpoints.remove( StorageService.getLocalStorageEndPoint() );
 		// TODO: throw a thrift exception if we do not have N nodes
@@ -354,23 +360,17 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
                                   String columnFamily,
                                   IColumnSelection columnSelection)
         throws TException
-	{
-        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily);
-        // check for  values
-        if( values.length < 1 )
-            throw new InvalidColumnNameException("empty column family specifier");
-
-	
+	{	
         Row row = readProtocol(tablename, key, columnFamily, columnSelection,
                                StorageService.ConsistencyLevel.WEAK);
         if (row == null)
             throw new DataNotFoundException("No row for key: " + key);
         
-        ColumnFamily cfamily = row.getColumnFamily( values[0] );
+        ColumnFamily cfamily = row.getColumnFamily( columnFamily );
         if (cfamily == null)
             throw new DataNotFoundException("ColumnFamily " + columnFamily + " is missing.....: "
                                             + "  key:" + key
-                                            + "  ColumnFamily:" + values[0]);
+                                            + "  ColumnFamily:" + columnFamily);
 		return cfamily;
 	}
 
@@ -390,7 +390,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
     {
         String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
 
-        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, columnSelection);
+        ColumnFamily cfamily = get_cf(tablename, key, values[0], columnSelection);
 
         if( values.length > 1 )
         {
@@ -453,7 +453,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
         String columnName = values[1];
 
         IColumnSelection sel = new ColumnListSelection(Arrays.asList(new String[] { columnName }));
-        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, sel);
+        ColumnFamily cfamily = get_cf(tablename, key, columnFamilyName, sel);
 
         IColumn col = cfamily.getColumn(columnName);
 
@@ -606,7 +606,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 
 				}
 			}
-			insert(rm);
+            insert(rm);
 		}
 		catch (Exception e)
 		{
@@ -658,7 +658,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
         if (values.length != 2)
             throw new InvalidColumnNameException("get_superColumn expects column of form cfamily:supercol");
 
-        ColumnFamily cfamily = get_cf(tablename, key, columnFamily_column, new AllColumnSelection());
+        ColumnFamily cfamily = get_cf(tablename, key, values[0], new AllColumnSelection());
         IColumn col = cfamily.getColumn(values[1]);
         if (col == null)
         {
