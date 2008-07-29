@@ -42,9 +42,9 @@ class RackAwareStrategy extends AbstractStrategy
     private IEndPointSnitch endPointSnitch_;
 
 
-    public RackAwareStrategy()
+    public RackAwareStrategy(IEndPointSnitch snitch)
     {
-        endPointSnitch_ = new EndPointSnitch();
+        endPointSnitch_ = snitch;
     }
 
     public EndPoint[] getStorageEndPoints(BigInteger token, TokenMetadata tmd)

@@ -897,7 +897,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         StageManager.registerStage(HttpConnection.httpStage_, new SingleThreadedStage("HTTP-REQUEST"));
 
         if ( DatabaseDescriptor.isRackAware() )
-            nodePicker_ = new RackAwareStrategy();
+            nodePicker_ = new RackAwareStrategy(endPointSnitch_);
         else
             nodePicker_ = new RackUnawareStrategy();
     }
