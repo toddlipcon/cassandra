@@ -113,6 +113,23 @@ public class TestTokenMetadata extends TestCase {
         assertTrue(tmd.isKnownEndPoint(EP_C));
     }
 
+    public void testMutate()
+    {
+        TokenMetadata tmd = buildRing();
+        TokenMetadata tmd2 = tmd.remove(EP_A);
+        assertEquals(2, tmd2.getRingSize());
+        assertFalse(tmd2.isKnownEndPoint(EP_A));
+
+        // Move token B
+        TokenMetadata tmd3 = tmd2.update(TOK_BC, EP_B);
+        assertEquals(2, tmd3.getRingSize());
+
+        // Add a new token (EP_A again)
+        TokenMetadata tmd4 = tmd3.update(TOK_AB, EP_A);
+        assertTrue(tmd4.isKnownEndPoint(EP_A));
+        assertEquals(TOK_AB, tmd4.getToken(EP_A));
+    }
+
     public void testRanges()
     {
         Range[] ranges = buildRing().getRanges();
