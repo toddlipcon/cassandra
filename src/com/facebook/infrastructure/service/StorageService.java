@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.*;
@@ -134,6 +135,36 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         return h;
     }
 
+    /**
+     * Atomically (lock free) update the token metadata with new
+     * info.
+     */
+    private void updateTokenMetadata(BigInteger token, EndPoint endpoint)
+    {
+        while( true )
+        {
+            TokenMetadata oldTM = tokenMetadata_.get();
+            TokenMetadata newTM = oldTM.update(token, endpoint);
+            if( tokenMetadata_.compareAndSet(oldTM, newTM) )
+                return;
+        }
+    }
+
+    /**
+     * Atomically (lock free) remove a token from the token metadata
+     */
+    private void removeTokenMetadata(EndPoint endpoint)
+    {
+        while( true )
+        {
+            TokenMetadata oldTM = tokenMetadata_.get();
+            TokenMetadata newTM = oldTM.remove(endpoint);
+            if( tokenMetadata_.compareAndSet(oldTM, newTM) )
+                return;
+        }
+    }
+
+
     /*
      * This class contains a helper method that will be used by
      * all abstractions that implement the IReplicaPlacementStrategy
@@ -144,6 +175,9 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         /*
          * This method changes the ports of the endpoints from
          * the control port to the storage ports.
+         *
+         * TODO: this mutability is bad! There might be a serious race here now
+         * that there aren't clones when reading TokenMetadata
         */
         protected void retrofitPorts(List<EndPoint> eps)
         {
@@ -153,26 +187,18 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
             }
         }
 
-        protected EndPoint getNextAvailableEndPoint(EndPoint startPoint, List<EndPoint> topN, List<EndPoint> liveNodes)
+        protected EndPoint getNextAvailableEndPoint(EndPoint startPoint, TokenMetadata tmd,
+                                                    List<EndPoint> topN, List<EndPoint> liveNodes)
         {
             EndPoint endPoint = null;
-            Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-            List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-            Collections.sort(tokens);
-            BigInteger token = tokenMetadata_.getToken(startPoint);
-            int index = Collections.binarySearch(tokens, token);
-            if(index < 0)
+
+            TokenMetadata.RingIterator iter = tmd.getRingIterator(startPoint);
+            while( iter.hasNext() )
             {
-                index = (index + 1) * (-1);
-                if (index >= tokens.size())
-                    index = 0;
-            }
-            int totalNodes = tokens.size();
-            int startIndex = (index+1)%totalNodes;
-            for (int i = startIndex, count = 1; count < totalNodes ; ++count, i = (i+1)%totalNodes)
-            {
-                EndPoint tmpEndPoint = tokenToEndPointMap.get(tokens.get(i));
-                if(FailureDetector.instance().isAlive(tmpEndPoint) && !topN.contains(tmpEndPoint) && !liveNodes.contains(tmpEndPoint))
+                EndPoint tmpEndPoint = iter.next().getValue();
+                if(FailureDetector.instance().isAlive(tmpEndPoint) &&
+                   !topN.contains(tmpEndPoint) &&
+                   !liveNodes.contains(tmpEndPoint))
                 {
                     endPoint = tmpEndPoint;
                     break;
@@ -187,11 +213,11 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
          * endpoint which is in the top N.
          * Get the map of top N to the live nodes currently.
          */
-        public Map<EndPoint, EndPoint> getHintedStorageEndPoints(BigInteger token)
+        public Map<EndPoint, EndPoint> getHintedStorageEndPoints(BigInteger token, TokenMetadata tmd)
         {
             List<EndPoint> liveList = new ArrayList<EndPoint>();
             Map<EndPoint, EndPoint> map = new HashMap<EndPoint, EndPoint>();
-            EndPoint[] topN = getStorageEndPoints( token );
+            EndPoint[] topN = getStorageEndPoints( token, tmd );
 
             for( int i = 0 ; i < topN.length ; i++)
             {
@@ -202,7 +228,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 }
                 else
                 {
-                    EndPoint endPoint = getNextAvailableEndPoint(topN[i], Arrays.asList(topN), liveList);
+                    EndPoint endPoint = getNextAvailableEndPoint(topN[i], tmd, Arrays.asList(topN), liveList);
                     if(endPoint != null)
                     {
                         map.put(endPoint, topN[i]);
@@ -218,7 +244,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
             return map;
         }
 
-        public abstract EndPoint[] getStorageEndPoints(BigInteger token);
+        public abstract EndPoint[] getStorageEndPoints(BigInteger token, TokenMetadata tmd);
 
     }
 
@@ -232,38 +258,25 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     {        
         public EndPoint[] getStorageEndPoints(BigInteger token)
         {
-            return getStorageEndPoints(token, tokenMetadata_.cloneTokenEndPointMap());            
+            return getStorageEndPoints(token, tokenMetadata_.get());            
         }
         
-        public EndPoint[] getStorageEndPoints(BigInteger token, Map<BigInteger, EndPoint> tokenToEndPointMap)
+        public EndPoint[] getStorageEndPoints(BigInteger token, TokenMetadata tmd)
         {
-            int startIndex = 0 ;
-            List<EndPoint> list = new ArrayList<EndPoint>();
-            int foundCount = 0;
             int N = DatabaseDescriptor.getReplicationFactor();
-            List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-            Collections.sort(tokens);
-            int index = Collections.binarySearch(tokens, token);
-            if(index < 0)
+
+            int foundCount = 0;
+            List<EndPoint> list = new ArrayList<EndPoint>();
+
+            TokenMetadata.RingIterator iter = tmd.getRingIterator(token);
+            while( iter.hasNext() )
             {
-                index = (index + 1) * (-1);
-                if (index >= tokens.size())
-                    index = 0;
-            }
-            int totalNodes = tokens.size();
-            // Add the node at the index by default
-            list.add(tokenToEndPointMap.get(tokens.get(index)));
-            foundCount++;
-            startIndex = (index + 1)%totalNodes;
-            // If we found N number of nodes we are good. This loop will just exit. Otherwise just
-            // loop through the list and add until we have N nodes.
-            for (int i = startIndex, count = 1; count < totalNodes && foundCount < N; ++count, i = (i+1)%totalNodes)
-            {
-                if( ! list.contains(tokenToEndPointMap.get(tokens.get(i))))
+                EndPoint ep = iter.next().getValue();
+                if( ! list.contains( ep ) ) // TODO is this check necessary?
                 {
-                    list.add(tokenToEndPointMap.get(tokens.get(i)));
-                    foundCount++;
-                    continue;
+                    list.add( ep );
+                    if (++foundCount == N)
+                        break;
                 }
             }
             retrofitPorts(list);
@@ -280,57 +293,47 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     class RackAwareStrategy extends AbstractStrategy
     {
-        public EndPoint[] getStorageEndPoints(BigInteger token)
+        public EndPoint[] getStorageEndPoints(BigInteger token, TokenMetadata tmd)
         {
-            int startIndex = 0 ;
+            int N = DatabaseDescriptor.getReplicationFactor();
+
             List<EndPoint> list = new ArrayList<EndPoint>();
+
+            Iterator<Map.Entry<BigInteger, EndPoint>> iter = tmd.getRingIterator(token);
+            EndPoint primaryEp = iter.next().getValue();
+            list.add(primaryEp);
+
+            int foundCount = 1;
             boolean bDataCenter = false;
             boolean bOtherRack = false;
-            int foundCount = 0;
-            int N = DatabaseDescriptor.getReplicationFactor();
-            Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-            List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-            Collections.sort(tokens);
-            int index = Collections.binarySearch(tokens, token);
-            if(index < 0)
+
+            while ( iter.hasNext() && !bDataCenter && !bOtherRack && foundCount < N)
             {
-                index = (index + 1) * (-1);
-                if (index >= tokens.size())
-                    index = 0;
-            }
-            int totalNodes = tokens.size();
-            // Add the node at the index by default
-            list.add(tokenToEndPointMap.get(tokens.get(index)));
-            foundCount++;
-            if( N == 1 )
-            {
-                return list.toArray(new EndPoint[0]);
-            }
-            startIndex = (index + 1)%totalNodes;
-            for (int i = startIndex, count = 1; count < totalNodes && foundCount < N; ++count, i = (i+1)%totalNodes)
-            {
-                try
-                {
+                Map.Entry<BigInteger, EndPoint> entry = iter.next();
+                EndPoint thisEp = entry.getValue();
+
+                try {
                     // First try to find one in a different data center
-                    if(!endPointSnitch_.isInSameDataCenter(tokenToEndPointMap.get(tokens.get(index)), tokenToEndPointMap.get(tokens.get(i))))
+                    if( !endPointSnitch_.isInSameDataCenter(primaryEp, thisEp) )
                     {
                         // If we have already found something in a diff datacenter no need to find another
                         if( !bDataCenter )
                         {
-                            list.add(tokenToEndPointMap.get(tokens.get(i)));
+                            list.add( thisEp );
                             bDataCenter = true;
                             foundCount++;
                         }
                         continue;
                     }
+                    
                     // Now  try to find one on a different rack
-                    if(!endPointSnitch_.isOnSameRack(tokenToEndPointMap.get(tokens.get(index)), tokenToEndPointMap.get(tokens.get(i))) &&
-                            endPointSnitch_.isInSameDataCenter(tokenToEndPointMap.get(tokens.get(index)), tokenToEndPointMap.get(tokens.get(i))))
+                    if( !endPointSnitch_.isOnSameRack(primaryEp, thisEp) &&
+                        endPointSnitch_.isInSameDataCenter(primaryEp, thisEp) )
                     {
                         // If we have already found something in a diff rack no need to find another
                         if( !bOtherRack )
                         {
-                            list.add(tokenToEndPointMap.get(tokens.get(i)));
+                            list.add( thisEp );
                             bOtherRack = true;
                             foundCount++;
                         }
@@ -341,19 +344,30 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 {
                     logger_.debug(LogUtil.throwableToString(e));
                 }
-
             }
-            // If we found N number of nodes we are good. This loop wil just exit. Otherwise just
-            // loop through the list and add until we have N nodes.
-            for (int i = startIndex, count = 1; count < totalNodes && foundCount < N; ++count, i = (i+1)%totalNodes)
+            
+            // If we haven't yet found enough nodes, start iterating again at the beginning of the ring
+            // taking any token regardless of location
+            if (foundCount < N)
             {
-                if( ! list.contains(tokenToEndPointMap.get(tokens.get(i))))
+                iter = tmd.getRingIterator(token);
+                while ( iter.hasNext() && foundCount < N )
                 {
-                    list.add(tokenToEndPointMap.get(tokens.get(i)));
-                    foundCount++;
-                    continue;
+                    Map.Entry<BigInteger, EndPoint> entry = iter.next();
+                    EndPoint thisEp = entry.getValue();
+
+                    if( ! list.contains( thisEp ) ) {
+                        list.add( thisEp );
+                        foundCount++;
+                    }
                 }
             }
+
+            if (foundCount < N)
+            {
+                logger_.warn("Could not find enough RackAware endpoints for token " + String.valueOf(token));
+            }
+
             retrofitPorts(list);
             return list.toArray(new EndPoint[0]);
         }
@@ -656,48 +670,75 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         private EndPoint[] targets_ = new EndPoint[0];
         private BigInteger[] tokens_ = new BigInteger[0];
 
+        private final TokenMetadata newTmd_;
+        private final TokenMetadata oldTmd_;
+
         BootStrapper(EndPoint[] target, BigInteger[] token)
         {
             targets_ = target;
             tokens_ = token;
+
+            /* store local snapshot of the token metadata, and a copy without the new nodes */
+            newTmd_ = tokenMetadata_.get();
+            oldTmd_ = getOldTokenMetadata(newTmd_);
+        }
+
+        /**
+         * Gets the token ring configuration without the new nodes in it.
+         */
+        private TokenMetadata getOldTokenMetadata(TokenMetadata newTmd)
+        {
+            Map<EndPoint, BigInteger> oldEndPointToTokenMap =
+                new HashMap<EndPoint, BigInteger>(newTmd.cloneEndPointTokenMap());
+            TreeMap<BigInteger, EndPoint> oldTokenToEndPointMap =
+                new TreeMap<BigInteger, EndPoint>(newTmd.cloneTokenEndPointMap());
+
+
+            /* remove the tokens associated with the endpoints being bootstrapped */
+            for ( BigInteger token : tokens_ )
+            {
+                oldTokenToEndPointMap.remove( token );
+            }
+            /* remove the endpoints */
+            for ( EndPoint target : targets_ )
+            {
+                oldEndPointToTokenMap.remove( target );
+            }
+
+            TokenMetadata tmdWithoutNewNodes = new TokenMetadata(oldTokenToEndPointMap,
+                                                                 oldEndPointToTokenMap);
+            return tmdWithoutNewNodes;
         }
 
         public void run()
         {
             try
             {
-                logger_.debug("Beginning bootstrap process for " + targets_ + " ...");                                                               
-                /* copy the token to endpoint map */
-                Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-                /* remove the tokens associated with the endpoints being bootstrapped */                
-                for ( BigInteger token : tokens_ )
-                {
-                    tokenToEndPointMap.remove(token);                    
-                }
+                logger_.debug("Beginning bootstrap process for " + targets_ + " ...");
 
-                Set<BigInteger> oldTokens = new HashSet<BigInteger>( tokenToEndPointMap.keySet() );
-                Range[] oldRanges = getAllRanges(oldTokens);
+                Range[] oldRanges = oldTmd_.getRanges();
                 logger_.debug("Total number of old ranges " + oldRanges.length);
                 /* 
                  * Find the ranges that are split. Maintain a mapping between
                  * the range being split and the list of subranges.
                 */                
-                Map<Range, List<Range>> splitRanges = getRangeSplitRangeMapping(oldRanges);                                                      
+                Map<Range, List<Range>> splitRanges = getRangeSplitRangeMapping(oldRanges);
+
                 /* Calculate the list of nodes that handle the old ranges */
-                Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(oldRanges, tokenToEndPointMap);
-                /* Mapping of split ranges to the list of endpoints responsible for the range */                
-                Map<Range, List<EndPoint>> replicasForSplitRanges = new HashMap<Range, List<EndPoint>>();                                
-                Set<Range> rangesSplit = splitRanges.keySet();                
+                Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(oldRanges, newTmd_);
+                /* Mapping of split ranges to the list of endpoints responsible for the range */
+                Map<Range, List<EndPoint>> replicasForSplitRanges = new HashMap<Range, List<EndPoint>>();
+                Set<Range> rangesSplit = splitRanges.keySet();
                 for ( Range splitRange : rangesSplit )
                 {
                     replicasForSplitRanges.put( splitRange, oldRangeToEndPointMap.get(splitRange) );
-                }                
+                }
                 /* Remove the ranges that are split. */
                 for ( Range splitRange : rangesSplit )
                 {
                     oldRangeToEndPointMap.remove(splitRange);
                 }
-                
+
                 /* Add the subranges of the split range to the map with the same replica set. */
                 for ( Range splitRange : rangesSplit )
                 {
@@ -711,16 +752,16 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 }                
                 
                 /* Add the new token and re-calculate the range assignments */
-                Collections.addAll( oldTokens, tokens_ );
-                Range[] newRanges = getAllRanges(oldTokens);
-
+                Range[] newRanges = newTmd_.getRanges();
                 logger_.debug("Total number of new ranges " + newRanges.length);
+
                 /* Calculate the list of nodes that handle the new ranges */
-                Map<Range, List<EndPoint>> newRangeToEndPointMap = constructRangeToEndPointMap(newRanges);
+                Map<Range, List<EndPoint>> newRangeToEndPointMap = constructRangeToEndPointMap(newRanges, newTmd_);
                 /* Calculate ranges that need to be sent and from whom to where */
-                Map<Range, List<BootstrapSourceTarget>> rangesWithSourceTarget = getRangeSourceTargetInfo(oldRangeToEndPointMap, newRangeToEndPointMap);
+                Map<Range, List<BootstrapSourceTarget>> rangesWithSourceTarget =
+                    getRangeSourceTargetInfo(oldRangeToEndPointMap, newRangeToEndPointMap);
                 /* Send messages to respective folks to stream data over to the new nodes being bootstrapped */
-                assignWork(rangesWithSourceTarget);                
+                assignWork(rangesWithSourceTarget);
             }
             catch ( Throwable th )
             {
@@ -844,19 +885,11 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      
         private Range getMyOldRange()
         {
-        	Map<EndPoint, BigInteger> oldEndPointToTokenMap = tokenMetadata_.cloneEndPointTokenMap();
-        	Map<BigInteger, EndPoint> oldTokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
 
-        	oldEndPointToTokenMap.remove(targets_);
-        	oldTokenToEndPointMap.remove(tokens_);
+            BigInteger myToken = oldTmd_.getToken(StorageService.tcpAddr_);
+            BigInteger prevToken = oldTmd_.getTokenBefore(myToken);
 
-        	BigInteger myToken = oldEndPointToTokenMap.get(StorageService.tcpAddr_);
-            List<BigInteger> allTokens = new ArrayList<BigInteger>(oldTokenToEndPointMap.keySet());
-            Collections.sort(allTokens);
-            int index = Collections.binarySearch(allTokens, myToken);
-            /* Calculate the lhs for the range */
-            BigInteger lhs = (index == 0) ? allTokens.get(allTokens.size() - 1) : allTokens.get( index - 1);
-            return new Range( lhs, myToken );
+            return new Range(prevToken, myToken);
         }
         
         /*
@@ -984,7 +1017,8 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     private long uptime_ = 0L;
 
     /* This abstraction maintains the token/endpoint metadata information */
-    private TokenMetadata tokenMetadata_ = new TokenMetadata();
+    private AtomicReference<TokenMetadata> tokenMetadata_ =
+        new AtomicReference<TokenMetadata>(new TokenMetadata());
     private DBManager.StorageMetadata storageMetadata_;
 
     /*
@@ -1208,7 +1242,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         /* Set up the request sampler */        
         sampler_ = new RequestCountSampler();
         /* Make sure this token gets gossiped around. */
-        tokenMetadata_.update(storageMetadata_.getStorageId(), StorageService.tcpAddr_);
+        updateTokenMetadata( storageMetadata_.getStorageId(), StorageService.tcpAddr_);
         Gossiper.instance().addApplicationState(StorageService.nodeId_, new ApplicationState(storageMetadata_.getStorageId().toString()));
     }
 
@@ -1260,7 +1294,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
 
     TokenMetadata getTokenMetadata()
     {
-        return tokenMetadata_.cloneMe();
+        return tokenMetadata_.get();
     }
 
     IEndPointSnitch getEndPointSnitch()
@@ -1308,11 +1342,14 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     {
         StringBuilder sb = new StringBuilder();
         /* Get the token to endpoint map. */
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
+        TokenMetadata tmd = tokenMetadata_.get();
+
+        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.get().cloneTokenEndPointMap();
         Set<BigInteger> tokens = tokenToEndPointMap.keySet();
         /* All the ranges for the tokens */
-        Range[] ranges = getAllRanges(tokens);
-        Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(ranges);
+
+        Range[] ranges = tmd.getRanges();
+        Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(ranges, tmd);
 
 
         for ( Map.Entry<Range, List<EndPoint>> entry : oldRangeToEndPointMap.entrySet() )
@@ -1333,37 +1370,6 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         return sb.toString();
     }
 
-    public Map<Range, List<EndPoint>> getRangeToEndPointMap()
-    {
-        /* Get the token to endpoint map. */
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        Set<BigInteger> tokens = tokenToEndPointMap.keySet();
-        /* All the ranges for the tokens */
-        Range[] ranges = getAllRanges(tokens);
-        Map<Range, List<EndPoint>> oldRangeToEndPointMap = constructRangeToEndPointMap(ranges);
-
-        return oldRangeToEndPointMap;
-    }
-
-    /**
-     * Construct the range to endpoint mapping based on the true view 
-     * of the world. 
-     * @param ranges
-     * @return mapping of ranges to the replicas responsible for them.
-    */
-    private Map<Range, List<EndPoint>> constructRangeToEndPointMap(Range[] ranges)
-    {
-        logger_.debug("Constructing range to endpoint map ...");
-        Map<Range, List<EndPoint>> rangeToEndPointMap = new HashMap<Range, List<EndPoint>>();
-        for ( Range range : ranges )
-        {
-            EndPoint[] endpoints = getNStorageEndPoint(range.right());
-            rangeToEndPointMap.put(range, new ArrayList<EndPoint>( Arrays.asList(endpoints) ) );
-        }
-        logger_.debug("Done constructing range to endpoint map ...");
-        return rangeToEndPointMap;
-    }
-    
     /**
      * Construct the range to endpoint mapping based on the view as dictated
      * by the mapping of token to endpoints passed in. 
@@ -1371,13 +1377,13 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      * @param tokenToEndPointMap mapping of token to endpoints.
      * @return mapping of ranges to the replicas responsible for them.
     */
-    private Map<Range, List<EndPoint>> constructRangeToEndPointMap(Range[] ranges, Map<BigInteger, EndPoint> tokenToEndPointMap)
+    private Map<Range, List<EndPoint>> constructRangeToEndPointMap(Range[] ranges, TokenMetadata tmd)
     {
         logger_.debug("Constructing range to endpoint map ...");
         Map<Range, List<EndPoint>> rangeToEndPointMap = new HashMap<Range, List<EndPoint>>();
         for ( Range range : ranges )
         {
-            EndPoint[] endpoints = getNStorageEndPoint(range.right(), tokenToEndPointMap);
+            EndPoint[] endpoints = getNStorageEndPoint(range.right(), tmd);
             rangeToEndPointMap.put(range, new ArrayList<EndPoint>( Arrays.asList(endpoints) ) );
         }
         logger_.debug("Done constructing range to endpoint map ...");
@@ -1411,10 +1417,10 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     private double getDiskSpaceForPrimaryRange(EndPoint target)
     {
         double primaryDiskSpace = 0d;
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        Set<BigInteger> tokens = tokenToEndPointMap.keySet();
-        Range[] allRanges = getAllRanges(tokens);
-        Arrays.sort(allRanges);
+        TokenMetadata tmd = tokenMetadata_.get();
+
+        Range[] allRanges = tmd.getRanges();
+
         /* Mapping from Range to its ordered position on the ring */
         Map<Range, Integer> rangeIndex = new HashMap<Range, Integer>();
         for ( int i = 0; i < allRanges.length; ++i )
@@ -1470,7 +1476,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     */
     public void setTokenMetadata(TokenMetadata tokenMetadata)
     {
-        tokenMetadata_ = tokenMetadata;
+        tokenMetadata_.set(tokenMetadata);
     }
 
     /**
@@ -1480,6 +1486,8 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     */
     public void onChange(EndPoint endpoint, EndPointState epState)
     {
+        TokenMetadata oldTmd = tokenMetadata_.get();
+
         EndPoint ep = new EndPoint(endpoint.getHost(), DatabaseDescriptor.getStoragePort());
         /* node identifier for this endpoint on the identifier space */
         ApplicationState nodeIdState = epState.getApplicationState(StorageService.nodeId_);
@@ -1487,7 +1495,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         {
             BigInteger newToken = new BigInteger(nodeIdState.getState());
             logger_.debug("CHANGE IN STATE FOR " + endpoint + " - has token " + nodeIdState.getState());
-            BigInteger oldToken = tokenMetadata_.getToken(ep);
+            BigInteger oldToken = oldTmd.getToken(ep);
 
             if ( oldToken != null )
             {
@@ -1500,7 +1508,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 if ( !oldToken.equals(newToken) )
                 {
                     logger_.debug("Relocation for endpoint " + ep);
-                    tokenMetadata_.update(newToken, ep);                    
+                    updateTokenMetadata( newToken, ep);
                 }
                 else
                 {
@@ -1517,7 +1525,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
                 /*
                  * This is a new node and we just update the token map.
                 */
-                tokenMetadata_.update(newToken, ep);
+                updateTokenMetadata( newToken, ep);
             }
         }
         else
@@ -1526,7 +1534,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
              * If we are here and if this node is UP and already has an entry
              * in the token map. It means that the node was behind a network partition.
             */
-            if ( epState.isAlive() && tokenMetadata_.isKnownEndPoint(endpoint) )
+            if ( epState.isAlive() && oldTmd.isKnownEndPoint(endpoint) )
             {
                 logger_.debug("EndPoint " + ep + " just recovered from a partition. Sending hinted data.");
                 doBootstrap(ep, BootstrapMode.HINT);
@@ -1646,7 +1654,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      * This method updates the token on disk and modifies the cached
      * StorageMetadata instance. This is only for the local endpoint.
     */
-    public void updateToken(BigInteger token) throws IOException
+    public void updateLocalToken(BigInteger token) throws IOException
     {
         /* update the token on disk */
         SystemTable.openSystemTable(SystemTable.name_).updateToken(token);
@@ -1654,7 +1662,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         storageMetadata_.setStorageId(token);
         /* Update the token maps */
         /* Get the old token. This needs to be removed. */
-        tokenMetadata_.update(token, StorageService.tcpAddr_);
+        updateTokenMetadata( token, StorageService.tcpAddr_);
         /* Gossip this new token for the local storage instance */
         Gossiper.instance().addApplicationState(StorageService.nodeId_, new ApplicationState(token.toString()));
     }
@@ -1668,7 +1676,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     public void removeTokenState(EndPoint endpoint) 
     {
-        tokenMetadata_.remove(endpoint);
+        removeTokenMetadata(endpoint);
         /* Remove the state from the Gossiper */
         Gossiper.instance().removeFromMembership(endpoint);
     }
@@ -1687,15 +1695,16 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     {
     	if ( keys.length > 0 )
     	{
+            TokenMetadata tmd = tokenMetadata_.get();
 	        isLoadState_ = true;
-	        BigInteger token = tokenMetadata_.getToken(StorageService.tcpAddr_);
-	        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-	        BigInteger[] tokens = tokenToEndPointMap.keySet().toArray( new BigInteger[0] );
-	        Arrays.sort(tokens);
-	        int index = Arrays.binarySearch(tokens, token) * (keys.length/tokens.length);
+
+	        BigInteger token = tmd.getToken(StorageService.tcpAddr_);
+            int myIndexInRing = tmd.getTokenIndex(token);
+
+	        int index = (int)(myIndexInRing * ( (double)keys.length / (double)tmd.getRingSize() ));
 	        BigInteger newToken = hash( keys[index] );
 	        /* update the token */
-	        updateToken(newToken);
+	        updateLocalToken(newToken);
     	}
     }
 
@@ -1716,11 +1725,13 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         String[] allNodes = nodes.split(":");
         EndPoint[] endpoints = new EndPoint[allNodes.length];
         BigInteger[] tokens = new BigInteger[allNodes.length];
+
+        TokenMetadata tmd = tokenMetadata_.get();
         
         for ( int i = 0; i < allNodes.length; ++i )
         {
             endpoints[i] = new EndPoint( allNodes[i].trim(), DatabaseDescriptor.getStoragePort() );
-            tokens[i] = tokenMetadata_.getToken(endpoints[i]);
+            tokens[i] = tmd.getToken(endpoints[i]);
         }
         
         /* Start the bootstrap algorithm */
@@ -1740,7 +1751,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         switch ( mode )
         {
             case FULL:
-                BigInteger token = tokenMetadata_.getToken(endpoint);
+                BigInteger token = tokenMetadata_.get().getToken(endpoint);
                 bootStrapper_.submit( new BootStrapper(new EndPoint[]{endpoint}, new BigInteger[]{token}) );
                 break;
 
@@ -1764,20 +1775,20 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public String getToken(EndPoint ep)
     {
         EndPoint ep2 = new EndPoint(ep.getHost(), DatabaseDescriptor.getStoragePort());
-        BigInteger token = tokenMetadata_.getToken(ep2);
+        BigInteger token = tokenMetadata_.get().getToken(ep2);
         return ( token == null ) ? BigInteger.ZERO.toString() : token.toString();
     }
 
     public String getToken()
     {
-        return tokenMetadata_.getToken(StorageService.tcpAddr_).toString();
+        return tokenMetadata_.get().getToken(StorageService.tcpAddr_).toString();
     }
     
     public void updateToken(String token)
     {
         try
         {
-            updateToken(new BigInteger(token));
+            updateLocalToken(new BigInteger(token));
         }
         catch ( IOException ex )
         {
@@ -1827,15 +1838,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     EndPoint getPredecessor(EndPoint ep)
     {
-        BigInteger token = tokenMetadata_.getToken(ep);
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-        Collections.sort(tokens);
-        int index = Collections.binarySearch(tokens, token);
-        EndPoint predecessor = (index == 0) ? tokenToEndPointMap.get(tokens
-                .get(tokens.size() - 1)) : tokenToEndPointMap.get(tokens
-                .get(--index));
-        return predecessor;
+        return tokenMetadata_.get().getTokenBefore(ep);
     }
 
     /*
@@ -1844,15 +1847,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     EndPoint getSuccessor(EndPoint ep)
     {
-        BigInteger token = tokenMetadata_.getToken(ep);
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-        Collections.sort(tokens);
-        int index = Collections.binarySearch(tokens, token);
-        EndPoint predecessor = (index == (tokens.size() - 1)) ? tokenToEndPointMap
-                .get(tokens.get(0))
-                : tokenToEndPointMap.get(tokens.get(++index));
-        return predecessor;
+        return tokenMetadata_.get().getTokenAfter(ep);
     }
 
     /**
@@ -1860,13 +1855,10 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     Range getMyRange()
     {
-        BigInteger myToken = tokenMetadata_.getToken(StorageService.tcpAddr_);
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        List<BigInteger> allTokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-        Collections.sort(allTokens);
-        int index = Collections.binarySearch(allTokens, myToken);
-        /* Calculate the lhs for the range */
-        BigInteger lhs = (index == 0) ? allTokens.get(allTokens.size() - 1) : allTokens.get( index - 1);
+        TokenMetadata tmd = tokenMetadata_.get();
+
+        BigInteger myToken = tmd.getToken(StorageService.tcpAddr_);
+        BigInteger lhs = tmd.getTokenBefore(myToken);
         return new Range( lhs, myToken );
     }
     
@@ -1877,9 +1869,9 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     Range getPrimaryRangeForEndPoint(EndPoint ep)
     {
-        BigInteger right = tokenMetadata_.getToken(ep);
-        EndPoint predecessor = getPredecessor(ep);
-        BigInteger left = tokenMetadata_.getToken(predecessor);
+        TokenMetadata tmd = tokenMetadata_.get();
+        BigInteger right = tmd.getToken(ep);
+        BigInteger left = tmd.getTokenBefore(right);
         return new Range(left, right);
     }
     
@@ -1904,24 +1896,6 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
         return ranges;
     }
     
-    /**
-     * Get all ranges that span the ring.
-    */
-    Range[] getAllRanges(Set<BigInteger> tokens)
-    {
-        List<Range> ranges = new ArrayList<Range>();
-        List<BigInteger> allTokens = new ArrayList<BigInteger>(tokens);
-        Collections.sort(allTokens);
-        int size = allTokens.size();
-        for ( int i = 1; i < size; ++i )
-        {
-            Range range = new Range( allTokens.get(i - 1), allTokens.get(i) );
-            ranges.add(range);
-        }
-        Range range = new Range( allTokens.get(size - 1), allTokens.get(0) );
-        ranges.add(range);
-        return ranges.toArray( new Range[0] );
-    }
 
     /**
      * This method returns the endpoint that is responsible for storing the
@@ -1933,31 +1907,17 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public EndPoint getPrimary(String key)
     {
         EndPoint endpoint = StorageService.tcpAddr_;
-        BigInteger token = hash(key);
-        Map<BigInteger, EndPoint> tokenToEndPointMap = tokenMetadata_.cloneTokenEndPointMap();
-        List<BigInteger> tokens = new ArrayList<BigInteger>(tokenToEndPointMap.keySet());
-        if (!tokens.isEmpty())
+        try
         {
-            Collections.sort(tokens);
-            int index = Collections.binarySearch(tokens, token);
-            if (index >= 0)
-            {
-                /*
-                 * retrieve the endpoint based on the token at this index in the
-                 * tokens list
-                 */
-                endpoint = tokenToEndPointMap.get(tokens.get(index));
-            }
-            else
-            {
-                index = (index + 1) * (-1);
-                if (index < tokens.size())
-                    endpoint = tokenToEndPointMap.get(tokens.get(index));
-                else
-                    endpoint = tokenToEndPointMap.get(tokens.get(0));
-            }
+            BigInteger token = hash(key);
+            return tokenMetadata_.get().getResponsibleEndPoint(token);
         }
-        return endpoint;
+        catch ( NoSuchElementException nsee )
+        {
+            // There must not be any known tokens
+            // TODO should this case ever happen? should we warn/die?
+            return tcpAddr_;
+        }
     }
 
     /**
@@ -2033,7 +1993,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public EndPoint[] getNStorageEndPoint(String key)
     {
         BigInteger token = hash(key);
-        return nodePicker_.getStorageEndPoints(token);
+        return nodePicker_.getStorageEndPoints(token, tokenMetadata_.get());
     }
     
     
@@ -2068,7 +2028,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public Map<EndPoint, EndPoint> getNStorageEndPointMap(String key)
     {
         BigInteger token = hash(key);
-        return nodePicker_.getHintedStorageEndPoints(token);
+        return nodePicker_.getHintedStorageEndPoints(token, tokenMetadata_.get());
     }
 
     /**
@@ -2083,7 +2043,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     public Map<EndPoint, EndPoint> getNHintedStorageEndPoint(String key)
     {
         BigInteger token = hash(key);
-        return nodePicker_.getHintedStorageEndPoints(token);
+        return nodePicker_.getHintedStorageEndPoints(token, tokenMetadata_.get());
     }
 
     /**
@@ -2094,7 +2054,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     public EndPoint[] getNStorageEndPoint(BigInteger token)
     {
-        return nodePicker_.getStorageEndPoints(token);
+        return nodePicker_.getStorageEndPoints(token, tokenMetadata_.get());
     }
     
     /**
@@ -2105,9 +2065,9 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      * param @ token - position on the ring
      * param @ tokens - w/o the following tokens in the token list
      */
-    protected EndPoint[] getNStorageEndPoint(BigInteger token, Map<BigInteger, EndPoint> tokenToEndPointMap)
+    protected EndPoint[] getNStorageEndPoint(BigInteger token, TokenMetadata tmd)
     {
-        return nodePicker_.getStorageEndPoints(token, tokenToEndPointMap);
+        return nodePicker_.getStorageEndPoints(token, tmd);
     }
 
     /**
@@ -2120,7 +2080,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     public Map<EndPoint, EndPoint> getNHintedStorageEndPoint(BigInteger token)
     {
-        return nodePicker_.getHintedStorageEndPoints(token);
+        return nodePicker_.getHintedStorageEndPoints(token, tokenMetadata_.get());
     }
     
     /**

@@ -31,7 +31,6 @@ import com.facebook.infrastructure.net.EndPoint;
  */
 public interface IReplicaPlacementStrategy
 {
-	public EndPoint[] getStorageEndPoints(BigInteger token);
-    public EndPoint[] getStorageEndPoints(BigInteger token, Map<BigInteger, EndPoint> tokenToEndPointMap);
-    public Map<EndPoint, EndPoint> getHintedStorageEndPoints(BigInteger token);
+    public EndPoint[] getStorageEndPoints(BigInteger token, TokenMetadata tmd);
+    public Map<EndPoint, EndPoint> getHintedStorageEndPoints(BigInteger token, TokenMetadata tmd);
 }
