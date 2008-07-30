@@ -838,7 +838,7 @@ public class Table
         ColumnFamily columnFamily = columnFamilies.get(Table.recycleBin_);
         // TODO should this ever be null?
         if (columnFamily != null) {
-            Collection<IColumn> columns = columnFamily.getAllColumns();
+            Collection<IColumn> columns = columnFamily.getNonSortedColumns();
             for(IColumn column : columns)
             {
                 ColumnFamilyStore cfStore = columnFamilyStores_.get(column.name());

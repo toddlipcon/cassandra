@@ -397,11 +397,11 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
             // this is the super column case
             IColumn column = cfamily.getColumn(values[1]);
             if(column != null)
-                return column.getSubColumns();
+                return column.getSortedSubColumns();
         }
         else
         {
-            return cfamily.getAllColumns();
+            return cfamily.getSortedColumns();
 
         }
 
@@ -758,7 +758,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
     private superColumn_t makeThriftSuperColumn(IColumn column) {
         superColumn_t ret = new superColumn_t();
         ret.name = column.name();
-        Collection<IColumn> subColumns = column.getSubColumns();
+        Collection<IColumn> subColumns = column.getSortedSubColumns();
         ret.columns = new ArrayList<column_t>();
         for(IColumn subColumn : subColumns)
         {                    

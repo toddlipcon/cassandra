@@ -490,34 +490,32 @@ public class ColumnFamilyStore
     private void filter(String cf, List<String> cNames, ColumnFamily columnFamily)
     {
     	String[] values = RowMutation.getColumnAndColumnFamily(cf);
-    	Map<String, String> cNameMap = new HashMap<String, String>();
+    	Map<String, String> cNameMap = new HashMap<String, String>(); // TODO use a set
 
     	for ( String cName : cNames )
     		cNameMap.put(cName, cName);
 
     	if(values.length == 1)
     	{
-    		IColumn columns[] = columnFamily.getAllColumns().toArray(new IColumn[0]);
-    		for(int i = 0; i < columns.length; i++)
-    		{
-    			if ( cNameMap.get( columns[i].name() ) == null )
-    				columnFamily.remove(columns[i].name());
-    		}
+            for ( IColumn col : columnFamily.getNonSortedColumns() )
+            {
+                if ( !cNameMap.containsKey( col.name() ) )
+                    columnFamily.remove( col.name() );
+            }
     	}
     	else if ( values.length == 2 && DatabaseDescriptor.getColumnType(values[0]).equals("Super") )
     	{
-    		IColumn columns[] = columnFamily.getAllColumns().toArray(new IColumn[0]);
-    		for(IColumn column : columns)
-    		{
-    			SuperColumn superColumn = (SuperColumn)column;
-        		IColumn subColumns[] = superColumn.getSubColumns().toArray(new IColumn[0]);
-        		for(int i = 0; i < subColumns.length; i++)
-        		{
-        			if ( cNameMap.get( subColumns[i].name() ) == null )
-        				superColumn.remove(subColumns[i].name());
-        		}
-    		}
-    	}
+            for ( IColumn column : columnFamily.getNonSortedColumns() )
+            {
+                SuperColumn superColumn = (SuperColumn)column;
+
+                for ( IColumn subColumn : superColumn.getNonSortedSubColumns() )
+                {
+                    if ( !cNameMap.containsKey( subColumn.name() ) )
+                        superColumn.remove( subColumn.name() );
+                }
+            }
+    	} // TODO else throw some exception
     }
 
     /*
@@ -534,7 +532,7 @@ public class ColumnFamilyStore
     	String[] values = RowMutation.getColumnAndColumnFamily(cf);
     	if(values.length == 1)
     	{
-    		IColumn columns[] = columnFamily.getAllColumns().toArray(new IColumn[0]);
+    		IColumn columns[] = columnFamily.getSortedColumns().toArray(new IColumn[0]);
 
     		for(int i = count ; i < columns.length; i++)
     		{
@@ -543,11 +541,10 @@ public class ColumnFamilyStore
     	}
     	else if ( values.length == 2 && DatabaseDescriptor.getColumnType(values[0]).equals("Super") )
     	{
-    		IColumn columns[] = columnFamily.getAllColumns().toArray(new IColumn[0]);
-    		for(IColumn column : columns)
+            for(IColumn column : columnFamily.getNonSortedColumns() )
     		{
     			SuperColumn superColumn = (SuperColumn)column;
-        		IColumn subColumns[] = superColumn.getSubColumns().toArray(new IColumn[0]);
+        		IColumn subColumns[] = superColumn.getSortedSubColumns().toArray(new IColumn[0]);
         		for(int i = count ; i < subColumns.length; i++)
         		{
         			superColumn.remove(subColumns[i].name());

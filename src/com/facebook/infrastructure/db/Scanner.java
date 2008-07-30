@@ -62,7 +62,7 @@ public class Scanner
             ColumnFamily columnFamily = table.get(key, columnFamily_);
             if ( columnFamily != null )
             {
-                Collection<IColumn> columns = columnFamily.getAllColumns();            
+                Collection<IColumn> columns = columnFamily.getSortedColumns();
                 columns_.addAll(columns);
             }
         }

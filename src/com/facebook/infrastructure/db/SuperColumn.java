@@ -88,10 +88,16 @@ public final class SuperColumn implements IColumn, Serializable
     	return null;
     }
 
-    public Collection<IColumn> getSubColumns()
+    public Collection<IColumn> getSortedSubColumns()
     {
     	return columns_.getSortedColumns();
     }
+
+    public Collection<IColumn> getNonSortedSubColumns()
+    {
+    	return columns_.getColumns();
+    }
+
 
     public IColumn getSubColumn(String name)
     {
@@ -147,7 +153,7 @@ public final class SuperColumn implements IColumn, Serializable
     int getSizeOfAllColumns()
     {
         int size = 0;
-        Collection<IColumn> subColumns = getSubColumns();
+        Collection<IColumn> subColumns = getNonSortedSubColumns();
         for ( IColumn subColumn : subColumns )
         {
             size += subColumn.serializedSize();
@@ -224,7 +230,7 @@ public final class SuperColumn implements IColumn, Serializable
     		throw new UnsupportedOperationException("Only Super column objects should be put here");
     	if( !name_.equals(column.name()))
     		throw new IllegalArgumentException("The name should match the name of the current column or super column");
-    	Collection<IColumn> columns = column.getSubColumns();
+    	Collection<IColumn> columns = column.getNonSortedSubColumns();
 
         for ( IColumn subColumn : columns )
         {
@@ -259,7 +265,7 @@ public final class SuperColumn implements IColumn, Serializable
 
     public void repair(IColumn column)
     {
-    	Collection<IColumn> columns = column.getSubColumns();
+    	Collection<IColumn> columns = column.getNonSortedSubColumns();
 
         for ( IColumn subColumn : columns )
         {
@@ -275,7 +281,7 @@ public final class SuperColumn implements IColumn, Serializable
     public IColumn diff(IColumn column)
     {
     	IColumn  columnDiff = new SuperColumn(column.name());
-    	Collection<IColumn> columns = column.getSubColumns();
+    	Collection<IColumn> columns = column.getNonSortedSubColumns();
 
         for ( IColumn subColumn : columns )
         {
@@ -293,7 +299,7 @@ public final class SuperColumn implements IColumn, Serializable
         		}
         	}
         }
-        if(!columnDiff.getSubColumns().isEmpty())
+        if(!columnDiff.getNonSortedSubColumns().isEmpty())
         	return columnDiff;
         else
         	return null;
@@ -323,7 +329,7 @@ public final class SuperColumn implements IColumn, Serializable
         sb.append(isMarkedForDelete());
         sb.append(":");
 
-        Collection<IColumn> columns  = getSubColumns();
+        Collection<IColumn> columns  = getSortedSubColumns();
         sb.append(columns.size());
         sb.append(":");
         sb.append(size());
@@ -346,7 +352,7 @@ class SuperColumnSerializer implements ICompactSerializer2<IColumn>
         dos.writeUTF(superColumn.name());
         dos.writeBoolean(superColumn.isMarkedForDelete());
 
-        Collection<IColumn> columns  = column.getSubColumns();
+        Collection<IColumn> columns  = column.getSortedSubColumns();
         int size = columns.size();
         dos.writeInt(size);
 

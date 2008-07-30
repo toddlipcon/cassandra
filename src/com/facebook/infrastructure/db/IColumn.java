@@ -38,7 +38,8 @@ public interface IColumn
     public int timestamp(String key);
     public byte[] value();
     public byte[] value(String key);
-    public Collection<IColumn> getSubColumns();
+    public Collection<IColumn> getNonSortedSubColumns();
+    public Collection<IColumn> getSortedSubColumns();
     public void addColumn(String name, IColumn column);
     public void delete();
     public void repair(IColumn column);

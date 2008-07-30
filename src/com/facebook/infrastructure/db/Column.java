@@ -103,7 +103,11 @@ public final class Column implements IColumn, Serializable
     	throw new UnsupportedOperationException("This operation is unsupported on simple columns.");
     }
 
-    public Collection<IColumn> getSubColumns()
+    public Collection<IColumn> getSortedSubColumns()
+    {
+    	throw new UnsupportedOperationException("This operation is unsupported on simple columns.");
+    }
+    public Collection<IColumn> getNonSortedSubColumns()
     {
     	throw new UnsupportedOperationException("This operation is unsupported on simple columns.");
     }

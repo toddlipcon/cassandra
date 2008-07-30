@@ -516,7 +516,7 @@ public class HttpRequestVerbHandler implements IVerbHandler
 
     	if("*".equals(sColumn))
     	{
-    		Collection<IColumn> columnCollection = cf.getAllColumns();
+    		Collection<IColumn> columnCollection = cf.getSortedColumns();
     		sb.append("Key = " + sKey + "<br>");
     		// draw the table out
     		HTMLFormatter formatter = new HTMLFormatter();

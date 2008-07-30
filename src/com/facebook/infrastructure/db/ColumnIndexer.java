@@ -50,7 +50,7 @@ public class ColumnIndexer
         int position = 0;
         int indexSizeInBytes = 0;
         int sizeSummarized = 0;
-        Collection<IColumn> columns = columnFamily.getAllColumns();
+        Collection<IColumn> columns = columnFamily.getSortedColumns();
 
         /*
          * Maintains a list of KeyPositionInfo objects for the columns in this

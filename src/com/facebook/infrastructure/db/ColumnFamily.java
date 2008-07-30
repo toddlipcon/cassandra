@@ -263,9 +263,14 @@ public final class ColumnFamily implements Serializable
         return columns_.get( name );
     }
 
-    public Collection<IColumn> getAllColumns()
+    public Collection<IColumn> getSortedColumns()
     {
         return columns_.getSortedColumns();
+    }
+
+    public Collection<IColumn> getNonSortedColumns()
+    {
+        return columns_.getColumns();
     }
 
     Map<String, IColumn> getColumnMap()
@@ -409,7 +414,7 @@ public final class ColumnFamily implements Serializable
     	sb.append(":");
     	sb.append(isMarkedForDelete());
     	sb.append(":");
-    	Collection<IColumn> columns = getAllColumns();
+    	Collection<IColumn> columns = getSortedColumns();
         sb.append(columns.size());
         sb.append(":cols={");
 
@@ -470,7 +475,7 @@ class ColumnFamilySerializer implements ICompactSerializer2<ColumnFamily>
 	*/
     public void serialize(ColumnFamily columnFamily, DataOutputStream dos) throws IOException
     {
-    	Collection<IColumn> columns = columnFamily.getAllColumns();
+    	Collection<IColumn> columns = columnFamily.getSortedColumns();
 
         /* write the column family id */
         dos.writeUTF(columnFamily.name());

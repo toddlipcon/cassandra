@@ -145,13 +145,13 @@ public class HintedHandOffManager implements IComponentShutdown
                     columnFamilyStore_.forceFlush(false);
             		return;
             	}
-            	Collection<IColumn> keys = hintedColumnFamily.getAllColumns();
+            	Collection<IColumn> keys = hintedColumnFamily.getNonSortedColumns();
             	if(keys != null)
             	{
                 	for(IColumn key : keys)
                 	{
                 		// Get all the endpoints for the key
-                		Collection<IColumn> endpoints =  key.getSubColumns();
+                		Collection<IColumn> endpoints =  key.getNonSortedSubColumns();
                 		allsuccess = true;
                 		if ( endpoints != null )
                 		{
@@ -205,13 +205,13 @@ public class HintedHandOffManager implements IComponentShutdown
             	hintedColumnFamily = table.get(key_, Table.hints_);
             	if(hintedColumnFamily == null)
             		return;
-            	Collection<IColumn> keys = hintedColumnFamily.getAllColumns();
+            	Collection<IColumn> keys = hintedColumnFamily.getNonSortedColumns();
             	if(keys != null)
             	{
                 	for(IColumn key : keys)
                 	{
                 		// Get all the endpoints for the key
-                		Collection<IColumn> endpoints =  key.getSubColumns();
+                		Collection<IColumn> endpoints =  key.getNonSortedSubColumns();
                 		if ( endpoints != null )
                 		{
                 			for(IColumn endpoint : endpoints )
