@@ -43,15 +43,17 @@ class PureRandom extends Random
     
     public int nextInt(int ub)
     {
-        if ( lastUb_ != ub )
+        // If we're going from a big upper bound to a smaller one,
+        // reclaim space. TODO is this actually worth doing?
+        if ( ub < lastUb_ && ub < bs_.size() )
         {
-            BitSet bs = new BitSet();
-            bs.or(bs_);
-            bs_.clear();
-            bs_ = bs;
-            lastUb_ = ub;
+            bs_.clear(ub, bs_.size());
+            bs_ = (BitSet)bs_.clone(); // trims
         }
+        lastUb_ = ub;
         
+        // If we've already used all the bits once, start again
+        // with a new bitset
         if ( bs_.cardinality() == ub )
         {
             bs_.clear();
@@ -63,21 +65,5 @@ class PureRandom extends Random
         }
         bs_.set(value);
         return value;
-    }
-    
-    public static void main(String[] args) throws Throwable
-    {
-        Random pr = new PureRandom();
-        long startTime = System.currentTimeMillis();
-        for ( int k = 0; k < 24; ++k )
-        {
-            for ( int i = 1; i < 5; ++i )
-            {
-                for ( int j = 0; j < i; ++j )
-                    System.out.println(pr.nextInt(i));
-                System.out.println("----------------------------------------");
-            }
-        }
-        System.out.println("Time taken : " + (System.currentTimeMillis() - startTime));
     }
 }
