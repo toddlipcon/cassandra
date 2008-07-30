@@ -116,7 +116,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 
 		try
 		{
-			logger_.debug(" insert");
+            logger_.debug(" insert(RowMutation): " + rm.toString());
 			Map<EndPoint, EndPoint> endpointMap = storageService_.getNStorageEndPointMap(rm.key());
 			// TODO: throw a thrift exception if we do not have N nodes
 			RowMutationMessage rmMsg = new RowMutationMessage(rm);
@@ -540,6 +540,8 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 					writeResponseResolver);
 			EndPoint[] endpoints = storageService_.getNStorageEndPoint(batchMutation.key);
 			// TODO: throw a thrift exception if we do not have N nodes
+            logger_.debug("Endpoints to send batch to: " + Arrays.toString(endpoints));
+
 
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
@@ -586,7 +588,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 
 		try
 		{
-			logger_.debug(" batch_insert");
+			logger_.debug(" batch_insert: " + batchMutation);
 			logger_.debug(" Creating the row mutation");
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
@@ -597,6 +599,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 				List<column_t> list = entry.getValue();
 				for (column_t columnData : list)
 				{
+                  logger_.debug(key + ":" + columnData.columnName);
 					rm.add(key + ":" + columnData.columnName,
 							columnData.value.getBytes(), columnData.timestamp);
 

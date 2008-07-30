@@ -787,6 +787,7 @@ public class Table
         }
         row.clear();
         long timeTaken = System.currentTimeMillis() - start;
+        logger_.info("TABLE APPLY TIME: " + String.valueOf(timeTaken));
         dbAnalyticsSource_.updateWriteStatistics(timeTaken);
     }
 

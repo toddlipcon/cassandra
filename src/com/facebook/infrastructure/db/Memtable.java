@@ -258,6 +258,8 @@ public class Memtable implements MemtableMBean
 
     private void resolve(String key, ColumnFamily columnFamily)
     {
+        long start = System.currentTimeMillis(); 
+
     	ColumnFamily oldCf = columnFamilies_.get(key);
         if ( oldCf != null )
         {
@@ -275,6 +277,8 @@ public class Memtable implements MemtableMBean
             currentSize_.addAndGet(columnFamily.size() + key.length());
             currentObjectCount_.addAndGet(columnFamily.getColumnCount());
         }
+        long end = System.currentTimeMillis(); 
+        logger_.info("RESOLVE TIME: " + String.valueOf(end - start));
     }
 
     /*

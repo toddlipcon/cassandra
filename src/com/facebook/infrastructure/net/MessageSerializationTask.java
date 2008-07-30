@@ -65,10 +65,13 @@ class MessageSerializationTask implements Runnable
         TcpConnection connection = null;
         try
         {
+          logger_.debug("About to process message");
             Message message = SinkManager.processClientMessageSink(message_);
             if(null == message) return;
             connection = MessagingService.getConnection(message_.getFrom(), to_);
+            logger_.debug("About to write message on " + connection);
             connection.write(message);            
+            logger_.debug("Successfully wrote message");
         }            
         catch ( SocketException se )
         {            

@@ -317,6 +317,7 @@ public final class SuperColumn implements IColumn, Serializable
     public String toString()
     {
     	StringBuilder sb = new StringBuilder();
+      sb.append("(SCOL:");
     	sb.append(name_);
     	sb.append(":");
         sb.append(isMarkedForDelete());
@@ -332,6 +333,7 @@ public final class SuperColumn implements IColumn, Serializable
             sb.append(subColumn.toString());
         }
         sb.append(":");
+        sb.append(")");
         return sb.toString();
     }
 }

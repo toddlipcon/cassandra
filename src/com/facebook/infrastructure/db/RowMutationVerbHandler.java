@@ -65,6 +65,8 @@ public class RowMutationVerbHandler implements IVerbHandler
         {
             RowMutationMessage rmMsg = RowMutationMessage.serializer().deserialize(rowMutationCtx.buffer_);
             RowMutation rm = rmMsg.getRowMutation();
+            logger_.info("ROW MUTATION: " + rm);
+
             /* Check if there were any hints in this message */
             byte[] hintedBytes = message.getHeader(RowMutationMessage.hint_);            
             if ( hintedBytes != null && hintedBytes.length > 0 )

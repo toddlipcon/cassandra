@@ -24,6 +24,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import com.facebook.infrastructure.io.ICompactSerializer;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -33,6 +34,8 @@ import com.facebook.infrastructure.io.ICompactSerializer;
 public class RowMutation implements Serializable
 {
 	private static ICompactSerializer<RowMutation> serializer_;
+    private static Logger logger_ = Logger.getLogger(RowMutation.class);     
+
 
     static
     {
@@ -99,6 +102,16 @@ public class RowMutation implements Serializable
     {
         String cfName = Table.hints_ + ":" + hint;
         add(cfName, new byte[0]);
+    }
+
+    public Map<String, ColumnFamily> getModifications()
+    {
+        return Collections.unmodifiableMap( modifications_ );
+    }
+
+    public Map<String, ColumnFamily> getDeletions()
+    {
+        return Collections.unmodifiableMap( deletions_ );
     }
 
     /*
@@ -235,6 +248,7 @@ public class RowMutation implements Serializable
     {
         Table table = Table.open(table_);
 
+        long start = System.currentTimeMillis(); 
         for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
         {
             String cfName = entry.getKey();
@@ -242,7 +256,13 @@ public class RowMutation implements Serializable
                 throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
             row.addColumnFamily( entry.getValue() );
         }
+        long end = System.currentTimeMillis();                       
+        logger_.info("ROW CREATION: " + (end - start) + " ms.");
+
         table.apply(row);
+        long end2 = System.currentTimeMillis();                       
+        logger_.info("TABLE APPLY: " + (end2 - end) + " ms.");
+
 
         for ( Map.Entry<String, ColumnFamily> entry : deletions_.entrySet() )
         {
@@ -271,6 +291,25 @@ public class RowMutation implements Serializable
             row.addColumnFamily( entry.getValue() );
         }
         table.load(row);
+    }
+
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("RowMutation: ");
+        b.append("Mods:");
+        for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
+        {
+            b.append("{cf:").append(entry.getKey()).append("{");
+            b.append(entry.getValue()).append("}} ");
+        }
+        b.append("   Dels:");
+
+        for ( Map.Entry<String, ColumnFamily> entry : deletions_.entrySet() )
+        {
+            b.append("{cf:").append(entry.getKey()).append("{");
+            b.append(entry.getValue()).append("}} ");
+        }
+        return b.toString();
     }
 }
 

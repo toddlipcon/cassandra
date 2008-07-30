@@ -411,13 +411,13 @@ public final class ColumnFamily implements Serializable
     	sb.append(":");
     	Collection<IColumn> columns = getAllColumns();
         sb.append(columns.size());
-        sb.append(":");
+        sb.append(":cols={");
 
         for ( IColumn column : columns )
         {
             sb.append(column.toString());
         }
-        sb.append(":");
+        sb.append("}:");
     	return sb.toString();
     }
 

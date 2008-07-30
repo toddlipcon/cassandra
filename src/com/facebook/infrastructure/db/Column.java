@@ -211,6 +211,7 @@ public final class Column implements IColumn, Serializable
     public String toString()
     {
     	StringBuilder sb = new StringBuilder();
+      sb.append("(COL:");
     	sb.append(name_);
     	sb.append(":");
     	sb.append(isMarkedForDelete());
@@ -221,6 +222,7 @@ public final class Column implements IColumn, Serializable
     	sb.append(":");
     	sb.append(value());
     	sb.append(":");
+      sb.append(")");
     	return sb.toString();
     }
 
