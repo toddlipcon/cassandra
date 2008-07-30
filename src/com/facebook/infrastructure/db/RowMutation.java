@@ -217,27 +217,7 @@ public class RowMutation implements Serializable
     public void apply() throws IOException, ColumnFamilyNotDefinedException
     {
         Row row = new Row(key_);
-        Table table = Table.open(table_);
-
-        for ( Map.Entry<String, ColumnFamily> entry : modifications_.entrySet() )
-        {
-            String cfName = entry.getKey();
-            if ( !table.isValidColumnFamily(cfName) )
-                throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( entry.getValue() );
-        }
-        table.apply(row);
-
-
-        for ( Map.Entry<String, ColumnFamily> entry : deletions_.entrySet() )
-        {
-            String cfName = entry.getKey();
-            if ( !table.isValidColumnFamily(cfName) )
-                throw new ColumnFamilyNotDefinedException("Column Family " + cfName + " has not been defined.");
-            row.addColumnFamily( entry.getValue() );
-        }
-        if ( !deletions_.isEmpty() )
-            table.delete(row);
+        apply(row);
     }
 
     /*
