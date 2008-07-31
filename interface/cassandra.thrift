@@ -51,6 +51,8 @@ service Cassandra extends fb303.FacebookService
 {
 
   list<column_t>	get_slice(string tablename,string key,string columnFamily_column, i32 start = -1 , i32 count = -1),
+  map<string, list<column_t>>	multiget_slice(string tablename, list<string> keys,
+                                               string columnFamily_column, i32 start = -1 , i32 count = -1),
 
   column_t       	get_column(string tablename,string key,string columnFamily_column),
 
@@ -72,6 +74,8 @@ service Cassandra extends fb303.FacebookService
   async void          	batch_insert_superColumn(batch_mutation_super_t batchMutationSuper),
 
   bool                	batch_insert_superColumn_blocking(batch_mutation_super_t batchMutationSuper),
+
+  map<string, superColumn_t> multiget_super(string tablename, list<string> keys, string columnFamily_column),
 }
 
 

@@ -212,8 +212,10 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
                                      ReadMessage readMessage,
                                      ReadMessage readMessageDigest) throws IOException, TimeoutException
 	{
-		Message message = ReadMessage.makeReadMessage(readMessage);
-		Message messageDigestOnly = ReadMessage.makeReadMessage(readMessageDigest);
+        IResponseResolver<Row> readResponseResolver = new ReadResponseResolver();
+        QuorumResponseHandler<Row> quorumResponseHandler = new QuorumResponseHandler<Row>(
+            DatabaseDescriptor.getReplicationFactor(),
+            readResponseResolver);
 
         // Pick the endpoint that will be the "data" endpoint. We let the
         // storage service pick this for us since it will prefer nearby
@@ -223,42 +225,10 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
         // Get the full list of endpoints to send to
         EndPoint[] endpoints = storageService_.getNStorageEndPoint(key);
 
-        // Construct a parallel array of messages - message[i] is going to be
-        // sent to endpoints[i] for all i.
-        Message messages[] = new Message[endpoints.length];
-
-        boolean didSetDataPoint = false;
-        for (int i = 0; i < endpoints.length; i++)
-        {
-            if ( endpoints[i].equals(dataPoint) )
-            {
-                messages[i] = message;
-                didSetDataPoint = true;
-            }
-            else
-            {
-                messages[i] = messageDigestOnly;
-            }
-        }
-
-        // We need to check for a race condition here - it's possible that between
-        // getting the data endpoint and getting the list of endpoints, the endpoint list
-        // might have been updated such that we are only going to send out digests. In that
-        // case, fall back to just setting the first endpoint to be the data message.
-        if (! didSetDataPoint )
-        {
-            messages[0] = message;
-        }
-
         // Send the messages!
+        sendStrongReadProtocolMessages(key, dataPoint, endpoints, readMessage, readMessageDigest, quorumResponseHandler);
 		try
 		{
-            IResponseResolver<Row> readResponseResolver = new ReadResponseResolver();
-            QuorumResponseHandler<Row> quorumResponseHandler = new QuorumResponseHandler<Row>(
-				DatabaseDescriptor.getReplicationFactor(),
-				readResponseResolver);
-
-			MessagingService.getMessagingInstance().sendRR(messages, endpoints,	quorumResponseHandler);
 
 	        long startTime2 = System.currentTimeMillis();
 			Row row = quorumResponseHandler.get();
@@ -374,6 +344,57 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return cfamily;
 	}
 
+
+    protected Map<String, ColumnFamily> multiget_cf(String tablename,
+                                                    List<String> keys,
+                                                    String columnFamily,
+                                                    IColumnSelection columnSelection)
+        throws TException
+    {
+        try
+        {
+            IResponseResolver<Row> readResponseResolver = new ReadResponseResolver();
+
+            MultigetResponseHandler<Row> mrh = new MultigetResponseHandler(readResponseResolver);
+            for (String key : keys)
+            {
+                ReadMessage readMessage = columnSelection.makeReadMessage(tablename, key, columnFamily);
+                ReadMessage readMessageDigestOnly = columnSelection.makeReadMessage(tablename, key, columnFamily);
+                readMessageDigestOnly.setIsDigestQuery(true);
+                // Pick the endpoint that will be the "data" endpoint. We let the
+                // storage service pick this for us since it will prefer nearby
+                // or local endpoints.
+                EndPoint dataPoint = storageService_.findSuitableEndPoint(key);
+
+                // Get the full list of endpoints to send to
+                EndPoint[] endpoints = storageService_.getNStorageEndPoint(key);
+
+                // Send the messages!
+                IAsyncCallback resolver = mrh.createCallback(key);
+                logger_.debug("Sending strong read protocol for key: " + key);
+                sendStrongReadProtocolMessages(
+                    key,dataPoint, endpoints, readMessage, readMessageDigestOnly, resolver);
+            }
+
+            try
+            {
+                Map<String, Row> results = mrh.get();
+                Map<String, ColumnFamily> cfs = new HashMap<String, ColumnFamily>();
+                for (Map.Entry<String, Row> entry : results.entrySet())
+                {
+                    cfs.put(entry.getKey(), entry.getValue().getColumnFamily(columnFamily));
+                }
+                return cfs;
+            } catch (TimeoutException te)
+            {
+                logger_.warn("Timed out!");
+                return new HashMap<String, ColumnFamily>();
+            }
+        } catch (IOException ioe) {
+            throw new TException(ioe);
+        }
+        
+    }
 
     /**
      * Returns the collection of columns referred to by columnFamily_column.
@@ -742,6 +763,93 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			logger_.info( LogUtil.throwableToString(e) );
 		}
 		return;
+    }
+
+    private void sendStrongReadProtocolMessages(String key,
+                                                EndPoint dataPoint,
+                                                EndPoint[] endpoints,
+                                                ReadMessage readMessage,
+                                                ReadMessage readMessageDigest,
+                                                IAsyncCallback responseHandler)
+        throws IOException
+    {
+		Message message = ReadMessage.makeReadMessage(readMessage);
+		Message messageDigestOnly = ReadMessage.makeReadMessage(readMessageDigest);
+
+        // Construct a parallel array of messages - message[i] is going to be
+        // sent to endpoints[i] for all i.
+        Message messages[] = new Message[endpoints.length];
+
+        boolean didSetDataPoint = false;
+        for (int i = 0; i < endpoints.length; i++)
+        {
+            if ( endpoints[i].equals(dataPoint) )
+            {
+                messages[i] = message;
+                didSetDataPoint = true;
+            }
+            else
+            {
+                messages[i] = messageDigestOnly;
+            }
+        }
+
+        // We need to check for a race condition here - it's possible that between
+        // getting the data endpoint and getting the list of endpoints, the endpoint list
+        // might have been updated such that we are only going to send out digests. In that
+        // case, fall back to just setting the first endpoint to be the data message.
+        if (! didSetDataPoint )
+        {
+            messages[0] = message;
+        }
+
+        MessagingService.getMessagingInstance().sendRR(messages, endpoints,	responseHandler);
+    }
+
+    public Map<String, superColumn_t> multiget_super(String tablename, List<String> keys, String columnFamily_column)
+        throws TException
+    {
+        String[] values = RowMutation.getColumnAndColumnFamily(columnFamily_column);
+        if (values.length != 2)
+            throw new InvalidColumnNameException("get_superColumn expects column of form cfamily:supercol");
+
+        String columnFamily = values[0];
+        String superColName = values[1];
+
+        IColumnSelection columnSelection = new ColumnListSelection(Arrays.asList(new String[]{superColName}));
+
+        Map<String, ColumnFamily> results = multiget_cf(tablename, keys, columnFamily, columnSelection);
+        Map<String, superColumn_t> tResults = new HashMap<String, superColumn_t>();
+
+        for ( Map.Entry<String, ColumnFamily> entry : results.entrySet() )
+        {
+            IColumn col = entry.getValue().getColumn(superColName);
+            tResults.put( entry.getKey(), makeThriftSuperColumn(col) );
+        }
+        return tResults;
+    }
+
+    public Map<String, List<column_t>> multiget_slice(String tablename, List<String> keys, String columnFamily_column,
+                                                      int start, int count) throws TException
+    {
+        logger_.debug("multiget_slice");
+        IColumnSelection columnSelection = makeSliceSelection(start, count);
+        Map<String, ColumnFamily> results = multiget_cf(tablename, keys, columnFamily_column, columnSelection);
+        Map<String, List<column_t>> tResults = new HashMap<String, List<column_t>>();
+        for ( Map.Entry<String, ColumnFamily> entry : results.entrySet() )
+        {
+            if ( null == entry.getValue() )
+                continue; // leave missing rows blank
+
+            List<column_t> tCols = new ArrayList<column_t>();
+            for ( IColumn col : entry.getValue().getSortedColumns() )
+            {
+                tCols.add( makeThriftColumn(col) );
+            }
+
+            tResults.put( entry.getKey(), tCols );
+        }
+        return tResults;
     }
 
     /**
