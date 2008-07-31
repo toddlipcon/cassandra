@@ -547,7 +547,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
 
-            for ( Map.Entry<String, ArrayList<column_t>> entry : batchMutation.cfmap.entrySet() )
+            for ( Map.Entry<String, List<column_t>> entry : batchMutation.cfmap.entrySet() )
             {
                 String key = entry.getKey();
                 List<column_t> list = entry.getValue();
@@ -593,7 +593,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			RowMutation rm = new RowMutation(batchMutation.table,
 					batchMutation.key.trim());
 
-            for ( Map.Entry<String, ArrayList<column_t>> entry : batchMutation.cfmap.entrySet() )
+            for ( Map.Entry<String, List<column_t>> entry : batchMutation.cfmap.entrySet() )
             {
                 String key = entry.getKey();
 				List<column_t> list = entry.getValue();
@@ -677,7 +677,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
 
-            for ( Map.Entry<String, ArrayList<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
+            for ( Map.Entry<String, List<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
             {
                 String key = entry.getKey();
 				List<superColumn_t> list = entry.getValue();
@@ -715,7 +715,7 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 			RowMutation rm = new RowMutation(batchMutationSuper.table,
 					batchMutationSuper.key.trim());
 
-            for ( Map.Entry<String, ArrayList<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
+            for ( Map.Entry<String, List<superColumn_t>> entry : batchMutationSuper.cfmap.entrySet() )
             {
                 String key = entry.getKey();
 				List<superColumn_t> list = entry.getValue();
@@ -782,6 +782,10 @@ public class CassandraImpl extends FacebookBase implements Cassandra.Iface
 		return null;
 	}
 
+    public String getCpuProfile(int timePeriod)
+    {
+        return ""; /* TODO what is this supposed to do? */
+    }
 
     /**
      * Makes an IColumnSelection implementation for a given start/count parameter.

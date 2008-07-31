@@ -36,10 +36,12 @@
 
   <property name="src.dir" value="${basedir}/src"/>
   <property name="src.test" value="${basedir}/testsrc"/>
+  <property name="gensrc.dir" value="${basedir}/gensrc"/>
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="conf.dir" value="${basedir}/conf"/>
   <property name="docs.dir" value="${basedir}/docs"/>
   <property name="interface.dir" value="${basedir}/interface"/>
+  <property name="thrift.stamps.dir" value="${basedir}/build/thrift-stamps"/>
 
   <property name="build.dir" value="${basedir}/build"/>
   <property name="build.test" value="${build.dir}/test"/>
@@ -92,6 +94,48 @@
     </sequential>
   </macrodef>
 
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+    <classpath>
+      <pathelement location="${lib.dir}/ant-contrib-1.0b3.jar" />
+    </classpath>
+  </taskdef>
+
+  <!-- thrift macro -->
+  <macrodef name="thrift">
+    <attribute name="interface.name" />
+
+    <sequential>
+      <outofdate>
+        <sourcefiles>
+          <pathelement path="${interface.dir}/@{interface.name}.thrift" />
+        </sourcefiles>
+        <targetfiles>
+          <pathelement path="${thrift.stamps.dir}/@{interface.name}" />
+        </targetfiles>
+        <sequential>
+          <mkdir dir="${thrift.stamps.dir}" />
+          <touch file="${thrift.stamps.dir}/@{interface.name}" />
+
+          <echo message="thrift ${interface.dir}/@{interface.name}" />
+          <exec executable="thrift" failonerror="true" >
+            <arg value="-gen" />
+            <arg value="java" />
+            <arg value="${interface.dir}/@{interface.name}.thrift" />
+          </exec>
+          <mkdir dir="${gensrc.dir}/" />
+          <move todir="${gensrc.dir}/">
+            <fileset dir="gen-java">
+              <include name="**/*.java" />
+            </fileset>
+          </move>
+          <delete dir="gen-java" />
+        </sequential>
+      </outofdate>
+    </sequential>
+  </macrodef>
+
+
+
 
   <!-- =========================================== -->
   <!--                 BUILD TARGETS               -->
@@ -105,6 +149,13 @@
   <target name="clean" description="Delete the build files and their directories">
     <delete file="${build.dir}/${final.name}.jar"/>
     <delete dir="${build.classes}"/>
+    <delete dir="${gensrc.dir}"/>
+    <delete dir="${thrift.stamps.dir}"/>
+  </target>
+
+  <target name="interface" description="Generate thrift interfaces">
+    <thrift interface.name="cassandra" />
+    <thrift interface.name="fb303" />
   </target>
 
   <target name="javadoc" description="Generate javadoc">
@@ -128,13 +179,14 @@
     </javadoc>
   </target>	
 
-  <target name="compile" depends="init" description="Build the Cassandra classes">
+  <target name="compile" depends="init, interface" description="Build the Cassandra classes">
     <javac
      debug="${javac.debug}"
      debuglevel="${javac.debuglevel}"
      destdir="${build.classes}"
      srcdir="${src.dir}"
     >
+      <src path="${gensrc.dir}" />
       <classpath refid="classpath"/>
     </javac>
   </target>
