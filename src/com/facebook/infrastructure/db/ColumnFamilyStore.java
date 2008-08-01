@@ -474,9 +474,9 @@ public class ColumnFamilyStore
     {
     	List<ColumnFamily> columnFamilies = new ArrayList<ColumnFamily>();
         /* Scan the SSTables on disk first */
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         getColumnFamilyFromDisk(key, cf, columns, columnFamilies, count);
-        logger_.info("DISK TIME: " + (System.currentTimeMillis() - start)
+        logger_.info("DISK TIME: " + (System.nanoTime() - start)/1000
                 + " ms.");
 
         /* Check if MemtableManager has any historical information */
@@ -570,7 +570,7 @@ public class ColumnFamilyStore
                 if ( !bVal )
                     continue;
 	            ColumnFamily columnFamily = fetchColumnFamily(key, cf, columnNames, file, count);
-	            long start = System.currentTimeMillis();
+	            long start = System.nanoTime();
 	            if (columnFamily != null)
 	            {
 	                /* suppress columns marked for delete */
@@ -585,7 +585,7 @@ public class ColumnFamilyStore
 	                }
 	                columnFamilies.add(columnFamily);
 	            }
-	            logger_.info("DISK Data structure population  TIME: " + (System.currentTimeMillis() - start)
+	            logger_.info("DISK Data structure population  TIME: " + (System.nanoTime() - start)/1000
 	                    + " ms.");
 
 	        }
@@ -601,25 +601,25 @@ public class ColumnFamilyStore
     private ColumnFamily fetchColumnFamily(String key, String cf, List<String> columnNames, String ssTableFile, int count) throws IOException
 	{
 		SSTable ssTable = new SSTable(ssTableFile);
-		long start = System.currentTimeMillis();
+		long start = System.nanoTime();
 		DataInputBuffer bufIn = null;
 		if(columnNames != null)
 			bufIn = ssTable.next(key, cf, columnNames);
 		else
 			bufIn = ssTable.next(key, cf);
 
-		logger_.info("DISK ssTable.next TIME: " + (System.currentTimeMillis() - start) + " ms.");
+		logger_.info("DISK ssTable.next TIME: " + (System.nanoTime() - start)/1000 + " ms.");
 
 		if (bufIn.getLength() == 0)
 			return null;
-        start = System.currentTimeMillis();
+        start = System.nanoTime();
         ColumnFamily columnFamily = null;
         if(columnNames != null)
         	columnFamily = ColumnFamily.serializer().deserialize(bufIn, columnNames);
         else
         	columnFamily = ColumnFamily.serializer().deserialize(bufIn, cf, count);
 
-		logger_.info("DISK Deserialize TIME: " + (System.currentTimeMillis() - start) + " ms.");
+		logger_.info("DISK Deserialize TIME: " + (System.nanoTime() - start)/1000 + " ms.");
 		if (columnFamily == null)
 			return columnFamily;
 		return (!columnFamily.isMarkedForDelete()) ? columnFamily : null;
@@ -1063,6 +1063,7 @@ public class ColumnFamilyStore
         /* If the key we read is the Block Index Key then omit and read the next key. */
         if ( filestruct.key.equals(SSTable.blockIndexKey_) )
         {
+            
             filestruct.bufOut.reset();
             bytesread = filestruct.reader.next(filestruct.bufOut);
             if (bytesread == -1)
@@ -1079,7 +1080,7 @@ public class ColumnFamilyStore
     BloomFilter.CountingBloomFilter doRangeOnlyAntiCompaction(List<String> files, List<Range> ranges, EndPoint target, int minBufferSize, List<String> fileList) throws IOException
     {
     	BloomFilter.CountingBloomFilter rangeCountingBloomFilter = null;
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         long totalBytesRead = 0;
         long totalBytesWritten = 0;
         long totalkeysRead = 0;
@@ -1292,9 +1293,9 @@ public class ColumnFamilyStore
             logger_.warn( LogUtil.throwableToString(ex) );
         }
         logger_.debug("Total time taken for range split   ..."
-                + (System.currentTimeMillis() - startTime));
+                + (System.nanoTime() - startTime)/1000);
         System.out.println("Total time taken for range split  ..."
-                + (System.currentTimeMillis() - startTime));
+                + (System.nanoTime() - startTime)/1000);
         logger_.debug("Total bytes Read for range split  ..." + totalBytesRead);
         System.out.println("Total bytes Read for compaction  ..."
                 + totalBytesRead);
@@ -1321,7 +1322,7 @@ public class ColumnFamilyStore
     	BloomFilter.CountingBloomFilter rangeCountingBloomFilter = null;
     	String newfile = null;
         long bytesread = -1;
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         long totalBytesRead = 0;
         long totalBytesWritten = 0;
         long totalkeysRead = 0;
@@ -1565,9 +1566,9 @@ public class ColumnFamilyStore
             logger_.warn( LogUtil.throwableToString(ex) );
         }
         logger_.debug("Total time taken for compaction  ..."
-                + (System.currentTimeMillis() - startTime));
+                + (System.nanoTime() - startTime)/1000);
         System.out.println("Total time taken for compaction  ..."
-                + (System.currentTimeMillis() - startTime));
+                + (System.nanoTime() - startTime)/1000);
         logger_.debug("Total bytes Read for compaction  ..." + totalBytesRead);
         System.out.println("Total bytes Read for compaction  ..."
                 + totalBytesRead);
@@ -1612,8 +1613,8 @@ public class ColumnFamilyStore
         System.out.println("Finished write ...");
         */
         /*
-        long start = System.currentTimeMillis();
-        while ( (System.currentTimeMillis() - start) < 120000 )
+        long start = System.nanoTime();
+        while ( (System.nanoTime() - start) < 120000 )
         {
             String key = Integer.toString(random.nextInt(4));
             ReadMessage readMessage = new ReadMessage("Mailbox", key, cf);

@@ -489,9 +489,9 @@ public class SSTable
         {
             if ( isIndexFileLoadable() )
             {
-                long start = System.currentTimeMillis();
+                long start = System.nanoTime();
                 loadIndexFile();
-                logger_.debug("INDEX LOAD TIME: " + (System.currentTimeMillis() - start) + " ms.");
+                logger_.debug("INDEX LOAD TIME: " + (System.nanoTime() - start)/1000 + " ms.");
             }
         }
     }
@@ -812,7 +812,7 @@ public class SSTable
         DataInputBuffer bufIn = new DataInputBuffer();
         long bufPtr = start;
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         /* Seek to start position */
         dataReader.seek(start);
         while ( bufPtr < end )
@@ -834,7 +834,7 @@ public class SSTable
             bufPtr += bytesRead;
         }
 
-        logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.currentTimeMillis() - startTime) + " ms.");
+        logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.nanoTime() - startTime)/1000 + " ms.");
         return bufIn;
     }
 
@@ -853,7 +853,7 @@ public class SSTable
         DataInputBuffer bufIn = new DataInputBuffer();
         long bufPtr = start;
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         long seekStart = getSeekPosition(key, start);        
         /* Seek to start position */
         dataReader.seek(seekStart);
@@ -867,8 +867,8 @@ public class SSTable
 
             if ( bufOut.getLength() > 0 )
             {
-                logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.currentTimeMillis() - startTime) + " ms." + " total region : " + (end -start) + "  Region scanned : " + (bufPtr -start));
-                startTime = System.currentTimeMillis();
+                logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.nanoTime() - startTime)/1000 + " ms." + " total region : " + (end -start) + "  Region scanned : " + (bufPtr -start));
+                startTime = System.nanoTime();
                 bufIn.reset(bufOut.getData(), bufOut.getLength());
                 /* read the key even though we do not use it */
                 bufIn.readUTF();
@@ -877,7 +877,7 @@ public class SSTable
             }
             bufPtr += bytesRead;
         }
-        logger_.debug("READ TIME for key " + key + " in file " + dataFile_ + " : " + (System.currentTimeMillis() - startTime) + " ms.");
+        logger_.debug("READ TIME for key " + key + " in file " + dataFile_ + " : " + (System.nanoTime() - startTime)/1000 + " ms.");
         return bufIn;
     }
     
@@ -898,7 +898,7 @@ public class SSTable
         DataInputBuffer bufIn = new DataInputBuffer();
         long bufPtr = start;
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         long seekStart = getSeekPosition(key, start);
         /* Seek to start position */
         dataReader.seek(seekStart);
@@ -913,8 +913,8 @@ public class SSTable
             if ( bufOut.getLength() > 0 )
             {
             	
-                logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.currentTimeMillis() - startTime) + " ms.");
-                startTime = System.currentTimeMillis();
+                logger_.debug("SCAN TIME for key " + key + " in file " + dataFile_ + " : " + (System.nanoTime() - startTime)/1000 + " ms.");
+                startTime = System.nanoTime();
                 bufIn.reset(bufOut.getData(), bufOut.getLength());
                 /* read the key even though we do not use it */
                 bufIn.readUTF();
@@ -923,7 +923,7 @@ public class SSTable
             }
             bufPtr += bytesRead;
         }
-        logger_.debug("READ TIME for key " + key + " in file " + dataFile_ + " : " + (System.currentTimeMillis() - startTime) + " ms.");
+        logger_.debug("READ TIME for key " + key + " in file " + dataFile_ + " : " + (System.nanoTime() - startTime)/1000 + " ms.");
         return bufIn;
     }
 

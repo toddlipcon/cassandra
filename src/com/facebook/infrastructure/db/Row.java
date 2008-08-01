@@ -196,7 +196,7 @@ public class Row implements Serializable
 
     public byte[] digest()
     {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
     	Set<String> cfamilies = columnFamilies_.keySet();
     	byte[] xorHash = new byte[0];
     	byte[] tmpHash = new byte[0];
@@ -215,7 +215,7 @@ public class Row implements Serializable
     			xorHash = CassandraUtilities.xor(xorHash, tmpHash);
     		}
     	}
-        logger_.info("DIGEST TIME: " + (System.currentTimeMillis() - start)
+        logger_.info("DIGEST TIME: " + (System.nanoTime() - start)/1000
                 + " ms.");
     	return xorHash;
     }

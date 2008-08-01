@@ -365,7 +365,7 @@ public final class DataInputBuffer extends DataInputStream
         {
             int pos = 0;
             int count = bytes.length;
-            long start2 = System.currentTimeMillis();
+            long start2 = System.nanoTime();
             while ( true )
             {
                 int value = (pos < count) ? (bytes[pos] & 0xff) : -1;
@@ -373,18 +373,18 @@ public final class DataInputBuffer extends DataInputStream
                 if ( value == -1 )
                     break;
             }
-            System.out.println("TIME TAKEN : " + (System.currentTimeMillis() - start2));
+            System.out.println("TIME TAKEN : " + (System.nanoTime() - start2)/1000);
             
             FastByteArrayInputStream bis = new FastByteArrayInputStream(bytes);        
             int read = 0;        
-            long start = System.currentTimeMillis();        
+            long start = System.nanoTime();        
             while ( true )
             {
                 read = bis.read();
                 if ( read == -1 )
                     break;            
             }        
-            System.out.println("TIME TAKEN : " + (System.currentTimeMillis() - start));
+            System.out.println("TIME TAKEN : " + (System.nanoTime() - start)/1000);
         }
         
         /*
