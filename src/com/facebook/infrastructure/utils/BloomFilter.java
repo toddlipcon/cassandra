@@ -87,6 +87,11 @@ public class BloomFilter implements Serializable
             return new BloomFilter.CountingBloomFilter(size_, hashes_, filter);
         }
 
+        public CountingBloomFilter shallowCopy()
+        {
+            return new BloomFilter.CountingBloomFilter(size_, hashes_, filter_);
+        }
+
         int size()
         {
             return size_;

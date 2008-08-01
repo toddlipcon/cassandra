@@ -131,6 +131,12 @@ public final class RequestCountSampler
             return new Cardinality(cbf, count_);
         }
 
+        synchronized Cardinality shallowCopy()
+        {
+            BloomFilter.CountingBloomFilter cbf = bloomFilter_.shallowCopy();
+            return new Cardinality(cbf, count_);
+        }
+
         synchronized void add(String key)
         {
             if ( !bloomFilter_.isPresent(key) )
@@ -290,7 +296,7 @@ public final class RequestCountSampler
             startTime_ = System.currentTimeMillis();
             diseminateLoadInfo();
             /* Clone the cardinality class and submit it to the flusher. */
-            Cardinality counter = counter_.cloneMe();
+            Cardinality counter = counter_.shallowCopy();
             cardinalityFlusher_.counter(counter);
             RequestCountSampler.cFlusher_.execute(cardinalityFlusher_);
         }
