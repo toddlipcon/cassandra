@@ -96,19 +96,21 @@ public class SequenceFile
             file_.seek(position);
         }
 
-        public void append(DataOutputBuffer keyBuffer, DataOutputBuffer buffer) throws IOException
+        public void append(IWritable keyWritable, IWritable valWritable) throws IOException
         {
-            int keyBufLength = keyBuffer.getLength();
-            if ( keyBuffer == null || keyBufLength == 0 )
+            int keyLen = keyWritable.getLength();
+            if ( keyLen == 0 )
                 throw new IllegalArgumentException("Key cannot be NULL or of zero length.");
 
             file_.seek(file_.getFilePointer());
-            file_.writeInt(keyBufLength);
-            file_.write(keyBuffer.getData(), 0, keyBufLength);
+            file_.writeInt(keyLen);
 
-            int length = buffer.getLength();
-            file_.writeInt(length);
-            file_.write(buffer.getData(), 0, length);
+            keyWritable.writeTo(file_);
+
+            int valLen = valWritable.getLength();
+            file_.writeInt(valLen);
+
+            valWritable.writeTo(file_);
         }
 
         public void append(String key, DataOutputBuffer buffer) throws IOException
@@ -207,7 +209,7 @@ public class SequenceFile
             file_.seek(position);
         }
 
-        public void append(DataOutputBuffer keyBuffer, DataOutputBuffer buffer) throws IOException
+        public void append(IWritable keyBuffer, IWritable buffer) throws IOException
         {
             int keyBufLength = keyBuffer.getLength();
             if ( keyBuffer == null || keyBufLength == 0 )
@@ -215,11 +217,11 @@ public class SequenceFile
 
             file_.seek(file_.getFilePointer());
             file_.writeInt(keyBufLength);
-            file_.write(keyBuffer.getData(), 0, keyBufLength);
+            keyBuffer.writeTo(file_);
 
             int length = buffer.getLength();
             file_.writeInt(length);
-            file_.write(buffer.getData(), 0, length);
+            buffer.writeTo(file_);
         }
 
         public void append(String key, DataOutputBuffer buffer) throws IOException
@@ -313,7 +315,7 @@ public class SequenceFile
             fc_.position(position);
         }
 
-        public void append(DataOutputBuffer keyBuffer, DataOutputBuffer buffer) throws IOException
+        public void append(IWritable keyBuffer, IWritable buffer) throws IOException
         {
             int keyBufLength = keyBuffer.getLength();
             if ( keyBuffer == null || keyBufLength == 0 )
@@ -323,9 +325,11 @@ public class SequenceFile
             int length = buffer.getLength();
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect( 4 + keyBufLength + 4 + length );
             byteBuffer.putInt(keyBufLength);
-            byteBuffer.put(keyBuffer.getData(), 0, keyBufLength);
+            keyBuffer.putTo(byteBuffer);
+
             byteBuffer.putInt(length);
-            byteBuffer.put(buffer.getData(), 0, length);
+            buffer.putTo(byteBuffer);
+
             byteBuffer.flip();
             fc_.write(byteBuffer);
         }
@@ -461,7 +465,7 @@ public class SequenceFile
             buffer_.position((int)position);
         }
 
-        public void append(DataOutputBuffer keyBuffer, DataOutputBuffer buffer) throws IOException
+        public void append(IWritable keyBuffer, IWritable buffer) throws IOException
         {
             int keyBufLength = keyBuffer.getLength();
             if ( keyBuffer == null || keyBufLength == 0 )
@@ -469,9 +473,10 @@ public class SequenceFile
 
             int length = buffer.getLength();
             buffer_.putInt(keyBufLength);
-            buffer_.put(keyBuffer.getData(), 0, keyBufLength);
+            keyBuffer.putTo(buffer_);
+
             buffer_.putInt(length);
-            buffer_.put(buffer.getData(), 0, length);
+            buffer.putTo(buffer_);
         }
 
         public void append(String key, DataOutputBuffer buffer) throws IOException

@@ -31,7 +31,7 @@ import java.util.Arrays;
  * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
  */
 
-public class DataOutputBuffer extends DataOutputStream
+public class DataOutputBuffer extends DataOutputStream implements IWritable
 {
     /*
      * This is a clone of the ByteArrayOutputStream but w/o the unnecessary
@@ -345,6 +345,17 @@ public class DataOutputBuffer extends DataOutputStream
     public int getLength()
     {
         return buffer.getLength();
+    }
+
+    /** Output the data to the given output stream */
+    public void writeTo(DataOutput out) throws IOException
+    {
+        out.write(getData(), 0, getLength());
+    }
+
+    /** Output the data to the given ByteBuffer (TODO: maybe not necessary with clever wrapping) */
+    public void putTo(ByteBuffer buf) throws IOException{
+        buf.put(getData(), 0, getLength());
     }
     
     /** Resets the buffer to empty. */
