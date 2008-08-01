@@ -39,6 +39,7 @@ import com.facebook.infrastructure.db.FileUtils;
 import com.facebook.infrastructure.db.SystemTable;
 import com.facebook.infrastructure.db.Table;
 import com.facebook.infrastructure.gms.*;
+import com.facebook.infrastructure.io.ChainedBufferOutput;
 import com.facebook.infrastructure.io.DataInputBuffer;
 import com.facebook.infrastructure.io.DataOutputBuffer;
 import com.facebook.infrastructure.io.ICompactSerializer;
@@ -221,7 +222,7 @@ public final class RequestCountSampler
                     writer_ = SequenceFile.writer(file);
                 }
                 writer_.seek(0L);
-                DataOutputBuffer bufOut = new DataOutputBuffer();
+                ChainedBufferOutput bufOut = new ChainedBufferOutput();
                 Cardinality.serializer().serialize(counterToPersist_, bufOut);
                 logger_.debug("Persisting the cardinality to disk ...");
                 writer_.append(table, bufOut);

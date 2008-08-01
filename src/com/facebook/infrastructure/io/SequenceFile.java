@@ -113,7 +113,7 @@ public class SequenceFile
             valWritable.writeTo(file_);
         }
 
-        public void append(String key, DataOutputBuffer buffer) throws IOException
+        public void append(String key, IWritable buffer) throws IOException
         {
             if ( key == null )
                 throw new IllegalArgumentException("Key cannot be NULL.");
@@ -122,7 +122,7 @@ public class SequenceFile
             file_.writeUTF(key);
             int length = buffer.getLength();
             file_.writeInt(length);
-            file_.write(buffer.getData(), 0, length);
+            buffer.writeTo( file_ );
         }
 
         public void append(String key, byte[] value) throws IOException
@@ -224,7 +224,7 @@ public class SequenceFile
             buffer.writeTo(file_);
         }
 
-        public void append(String key, DataOutputBuffer buffer) throws IOException
+        public void append(String key, IWritable buffer) throws IOException
         {
             if ( key == null )
                 throw new IllegalArgumentException("Key cannot be NULL.");
@@ -233,7 +233,7 @@ public class SequenceFile
             file_.writeUTF(key);
             int length = buffer.getLength();
             file_.writeInt(length);
-            file_.write(buffer.getData(), 0, length);
+            buffer.writeTo( file_ );
         }
 
         public void append(String key, byte[] value) throws IOException
@@ -334,7 +334,7 @@ public class SequenceFile
             fc_.write(byteBuffer);
         }
 
-        public void append(String key, DataOutputBuffer buffer) throws IOException
+        public void append(String key, IWritable buffer) throws IOException
         {
             if ( key == null )
                 throw new IllegalArgumentException("Key cannot be NULL.");
@@ -344,7 +344,7 @@ public class SequenceFile
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect( SequenceFile.utfPrefix_ + key.length() + 4 + length);
             SequenceFile.writeUTF(byteBuffer, key);
             byteBuffer.putInt(length);
-            byteBuffer.put(buffer.getData(), 0, length);
+            buffer.putTo( byteBuffer );
             byteBuffer.flip();
             fc_.write(byteBuffer);
         }
@@ -479,7 +479,7 @@ public class SequenceFile
             buffer.putTo(buffer_);
         }
 
-        public void append(String key, DataOutputBuffer buffer) throws IOException
+        public void append(String key, IWritable buffer) throws IOException
         {
             if ( key == null )
                 throw new IllegalArgumentException("Key cannot be NULL.");
@@ -487,7 +487,8 @@ public class SequenceFile
             int length = buffer.getLength();
             SequenceFile.writeUTF(buffer_, key);
             buffer_.putInt(length);
-            buffer_.put(buffer.getData(), 0, length);
+
+            buffer.putTo( buffer_ );
         }
 
         public void append(String key, byte[] value) throws IOException

@@ -61,7 +61,7 @@ public interface IFileWriter
      * @param buffer buffer containing the serialized data.
      * @throws IOException
      */
-    public void append(String key, DataOutputBuffer buffer) throws IOException;
+    public void append(String key, IWritable buffer) throws IOException;
     
     /**
      * Appends the key and the value to the the underlying SequenceFile.
