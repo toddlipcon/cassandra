@@ -21,7 +21,7 @@ package com.facebook.infrastructure.db;
 import java.util.*;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -219,7 +219,7 @@ public class Table
 
     static class TableMetadataSerializer implements ICompactSerializer<TableMetadata>
     {
-        public void serialize(TableMetadata tmetadata, DataOutputStream dos) throws IOException
+        public void serialize(TableMetadata tmetadata, DataOutput dos) throws IOException
         {
             int size = tmetadata.cfIdMap_.size();
             dos.writeInt(size);

@@ -20,7 +20,7 @@ package com.facebook.infrastructure.db;
 
 import java.util.*;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import com.facebook.infrastructure.io.ICompactSerializer;
@@ -295,7 +295,7 @@ public class RowMutation implements Serializable
 
 class RowMutationSerializer implements ICompactSerializer<RowMutation>
 {
-	private void freezeTheMaps(Map<String, ColumnFamily> map, DataOutputStream dos) throws IOException
+	private void freezeTheMaps(Map<String, ColumnFamily> map, DataOutput dos) throws IOException
 	{
 		int size = map.size();
         dos.writeInt(size);
@@ -313,7 +313,7 @@ class RowMutationSerializer implements ICompactSerializer<RowMutation>
         }
 	}
 
-	public void serialize(RowMutation rm, DataOutputStream dos) throws IOException
+	public void serialize(RowMutation rm, DataOutput dos) throws IOException
 	{
 		dos.writeUTF(rm.table());
 		dos.writeUTF(rm.key());

@@ -20,6 +20,7 @@ package com.facebook.infrastructure.db;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -83,7 +84,7 @@ public class RowMutationMessage implements Serializable
 
 class RowMutationMessageSerializer implements ICompactSerializer<RowMutationMessage>
 {
-	public void serialize(RowMutationMessage rm, DataOutputStream dos) throws IOException
+	public void serialize(RowMutationMessage rm, DataOutput dos) throws IOException
 	{
 		RowMutation.serializer().serialize(rm.getRowMutation(), dos);
 	}

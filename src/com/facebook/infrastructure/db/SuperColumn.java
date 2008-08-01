@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.db;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -346,7 +346,7 @@ public final class SuperColumn implements IColumn, Serializable
 
 class SuperColumnSerializer implements ICompactSerializer2<IColumn>
 {
-    public void serialize(IColumn column, DataOutputStream dos) throws IOException
+    public void serialize(IColumn column, DataOutput dos) throws IOException
     {
     	SuperColumn superColumn = (SuperColumn)column;
         dos.writeUTF(superColumn.name());

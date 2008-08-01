@@ -20,6 +20,7 @@ package com.facebook.infrastructure.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -69,7 +70,7 @@ public class BootstrapInitiateMessage implements Serializable
 
 class BootstrapInitiateMessageSerializer implements ICompactSerializer<BootstrapInitiateMessage>
 {
-    public void serialize(BootstrapInitiateMessage bim, DataOutputStream dos) throws IOException
+    public void serialize(BootstrapInitiateMessage bim, DataOutput dos) throws IOException
     {
         dos.writeInt(bim.streamContexts_.length);
         for ( StreamContextManager.StreamContext streamContext : bim.streamContexts_ )

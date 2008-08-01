@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.dht;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -184,7 +184,7 @@ public class Range implements Comparable<Range>
 
 class RangeSerializer implements ICompactSerializer<Range>
 {
-    public void serialize(Range range, DataOutputStream dos) throws IOException
+    public void serialize(Range range, DataOutput dos) throws IOException
     {        
         dos.writeUTF(range.left().toString());
         dos.writeUTF(range.right().toString());

@@ -227,7 +227,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     
     protected static class BootstrapMetadataMessageSerializer implements ICompactSerializer<BootstrapMetadataMessage>
     {
-        public void serialize(BootstrapMetadataMessage bsMetadataMessage, DataOutputStream dos) throws IOException
+        public void serialize(BootstrapMetadataMessage bsMetadataMessage, DataOutput dos) throws IOException
         {
             BootstrapMetadata[] bsMetadata = bsMetadataMessage.bsMetadata_;
             int size = (bsMetadata == null) ? 0 : bsMetadata.length;
@@ -426,7 +426,7 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
     
     protected static class BootstrapMetadataSerializer implements ICompactSerializer<BootstrapMetadata>
     {
-        public void serialize(BootstrapMetadata bsMetadata, DataOutputStream dos) throws IOException
+        public void serialize(BootstrapMetadata bsMetadata, DataOutput dos) throws IOException
         {
             CompactEndPointSerializationHelper.serialize(bsMetadata.target_, dos);
             int size = (bsMetadata.ranges_ == null) ? 0 : bsMetadata.ranges_.size();            

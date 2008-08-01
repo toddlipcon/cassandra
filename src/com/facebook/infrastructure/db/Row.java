@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.db;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
@@ -228,7 +228,7 @@ public class Row implements Serializable
 
 class RowSerializer implements ICompactSerializer<Row>
 {
-    public void serialize(Row row, DataOutputStream dos) throws IOException
+    public void serialize(Row row, DataOutput dos) throws IOException
     {
         dos.writeUTF(row.key());
         Map<String, ColumnFamily> columnFamilies = row.getColumnFamilies();

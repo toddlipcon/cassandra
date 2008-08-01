@@ -20,6 +20,7 @@ package com.facebook.infrastructure.net.io;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -137,7 +138,7 @@ public class StreamContextManager
     
     public static class StreamContextSerializer implements ICompactSerializer<StreamContext>
     {
-        public void serialize(StreamContextManager.StreamContext sc, DataOutputStream dos) throws IOException
+        public void serialize(StreamContextManager.StreamContext sc, DataOutput dos) throws IOException
         {
             dos.writeUTF(sc.targetFile_);
             dos.writeLong(sc.expectedBytes_);
@@ -213,7 +214,7 @@ public class StreamContextManager
     
     public static class StreamStatusSerializer implements ICompactSerializer<StreamStatus>
     {
-        public void serialize(StreamStatus streamStatus, DataOutputStream dos) throws IOException
+        public void serialize(StreamStatus streamStatus, DataOutput dos) throws IOException
         {
             dos.writeUTF(streamStatus.getFile());
             dos.writeLong(streamStatus.getExpectedBytes());
@@ -277,7 +278,7 @@ public class StreamContextManager
     
     public static class StreamStatusMessageSerializer implements ICompactSerializer<StreamStatusMessage>
     {
-        public void serialize(StreamStatusMessage streamStatusMessage, DataOutputStream dos) throws IOException
+        public void serialize(StreamStatusMessage streamStatusMessage, DataOutput dos) throws IOException
         {
             StreamStatus.serializer().serialize(streamStatusMessage.streamStatus_, dos);            
         }

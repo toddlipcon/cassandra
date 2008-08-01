@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.gms;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import com.facebook.infrastructure.io.ICompactSerializer;
@@ -91,7 +91,9 @@ public class GossipDigest implements Comparable<GossipDigest>
 
 class GossipDigestSerializer implements ICompactSerializer<GossipDigest>
 {       
-    public void serialize(GossipDigest gDigest, DataOutputStream dos) throws IOException
+    public static final int SERIALIZED_SIZE = 8;
+
+    public void serialize(GossipDigest gDigest, DataOutput dos) throws IOException
     {        
         CompactEndPointSerializationHelper.serialize(gDigest.endPoint_, dos);
         dos.writeInt(gDigest.generation_);

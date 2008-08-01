@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.db;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -243,7 +243,7 @@ public final class Column implements IColumn, Serializable
 
 class ColumnSerializer implements ICompactSerializer2<IColumn>
 {
-    public void serialize(IColumn column, DataOutputStream dos) throws IOException
+    public void serialize(IColumn column, DataOutput dos) throws IOException
     {
         dos.writeUTF(column.name());
         dos.writeBoolean(column.isMarkedForDelete());

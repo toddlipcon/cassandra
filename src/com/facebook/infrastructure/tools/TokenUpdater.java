@@ -22,6 +22,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -117,7 +118,7 @@ public class TokenUpdater
     
     public static class TokenInfoMessageSerializer implements ICompactSerializer<TokenInfoMessage>
     {
-        public void serialize(TokenInfoMessage tiMessage, DataOutputStream dos) throws IOException
+        public void serialize(TokenInfoMessage tiMessage, DataOutput dos) throws IOException
         {
             byte[] node = EndPoint.toBytes( tiMessage.getTarget() );
             dos.writeInt(node.length);

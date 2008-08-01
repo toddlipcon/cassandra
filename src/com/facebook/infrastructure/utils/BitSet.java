@@ -1116,7 +1116,7 @@ public class BitSet implements Cloneable, java.io.Serializable
 
 class BitSetSerializer implements ICompactSerializer<BitSet>
 {
-    public void serialize(BitSet bs, DataOutputStream dos) throws IOException
+    public void serialize(BitSet bs, DataOutput dos) throws IOException
     {
         dos.writeInt(bs.wordsInUse());
         long[] words = bs.words();

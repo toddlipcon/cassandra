@@ -20,6 +20,7 @@ package com.facebook.infrastructure.db;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -88,7 +89,7 @@ private static ICompactSerializer<WriteResponseMessage> serializer_;
 
 class WriteResponseMessageSerializer implements ICompactSerializer<WriteResponseMessage>
 {
-	public void serialize(WriteResponseMessage wm, DataOutputStream dos) throws IOException
+	public void serialize(WriteResponseMessage wm, DataOutput dos) throws IOException
 	{
 		dos.writeUTF(wm.table());
 		dos.writeUTF(wm.key());

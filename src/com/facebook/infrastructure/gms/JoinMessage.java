@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.gms;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;
 
@@ -52,7 +52,7 @@ class JoinMessage
 
 class JoinMessageSerializer implements ICompactSerializer<JoinMessage>
 {
-    public void serialize(JoinMessage joinMessage, DataOutputStream dos) throws IOException
+    public void serialize(JoinMessage joinMessage, DataOutput dos) throws IOException
     {    
         dos.writeUTF(joinMessage.clusterId_);         
     }

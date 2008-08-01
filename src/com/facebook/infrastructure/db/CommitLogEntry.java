@@ -20,7 +20,7 @@ package com.facebook.infrastructure.db;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.io.ByteArrayInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import com.facebook.infrastructure.io.ICompactSerializer;
@@ -88,7 +88,7 @@ class CommitLogEntry
 
 class CommitLogEntrySerializer implements ICompactSerializer<CommitLogEntry>
 {
-    public void serialize(CommitLogEntry logEntry, DataOutputStream dos) throws IOException
+    public void serialize(CommitLogEntry logEntry, DataOutput dos) throws IOException
     {    
         int length = logEntry.length();
         dos.writeInt(length);

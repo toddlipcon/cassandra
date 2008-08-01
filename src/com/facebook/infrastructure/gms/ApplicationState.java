@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.gms;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import com.facebook.infrastructure.dht.Range;
@@ -87,7 +87,7 @@ public class ApplicationState
 
 class ApplicationStateSerializer implements ICompactSerializer<ApplicationState>
 {
-    public void serialize(ApplicationState appState, DataOutputStream dos) throws IOException
+    public void serialize(ApplicationState appState, DataOutput dos) throws IOException
     {
         dos.writeUTF(appState.state_);
         dos.writeInt(appState.version_);

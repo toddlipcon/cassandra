@@ -19,13 +19,14 @@
 package com.facebook.infrastructure.gms;
 
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
 
 import org.apache.log4j.Logger;
 
-import com.facebook.infrastructure.io.ICompactSerializer;
+import com.facebook.infrastructure.io.ICompactStreamSerializer;
 import com.facebook.infrastructure.net.CompactEndPointSerializationHelper;
 import com.facebook.infrastructure.net.EndPoint;
 import com.facebook.infrastructure.utils.*;
@@ -40,7 +41,7 @@ import com.facebook.infrastructure.utils.*;
 
 class GossipDigestSynMessage
 {
-    private static ICompactSerializer<GossipDigestSynMessage> serializer_;
+    private static ICompactStreamSerializer<GossipDigestSynMessage> serializer_;
     static
     {
         serializer_ = new GossipDigestSynMessageSerializer();
@@ -49,7 +50,7 @@ class GossipDigestSynMessage
     String clusterId_;
     List<GossipDigest> gDigests_ = new ArrayList<GossipDigest>();
 
-    public static ICompactSerializer<GossipDigestSynMessage> serializer()
+    public static ICompactStreamSerializer<GossipDigestSynMessage> serializer()
     {
         return serializer_;
     }
@@ -75,7 +76,7 @@ class GossipDigestSerializationHelper
         boolean bVal = true;
         int size = gDigestList.size();                        
         dos.writeInt(size);
-        
+
         int estimate = 0;            
         for ( GossipDigest gDigest : gDigestList )
         {
@@ -165,7 +166,7 @@ class EndPointStatesSerializationHelper
     }
 }
 
-class GossipDigestSynMessageSerializer implements ICompactSerializer<GossipDigestSynMessage>
+class GossipDigestSynMessageSerializer implements ICompactStreamSerializer<GossipDigestSynMessage>
 {   
     public void serialize(GossipDigestSynMessage gDigestSynMessage, DataOutputStream dos) throws IOException
     {    

@@ -239,7 +239,7 @@ class CommitLogHeader
 
 class CommitLogHeaderSerializer implements ICompactSerializer<CommitLogHeader>
 {
-    public void serialize(CommitLogHeader clHeader, DataOutputStream dos) throws IOException
+    public void serialize(CommitLogHeader clHeader, DataOutput dos) throws IOException
     {        
         dos.writeInt(clHeader.getBitSet().length);
         dos.write(clHeader.getBitSet());

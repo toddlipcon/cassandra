@@ -27,8 +27,8 @@ import java.net.UnknownHostException;
 
 public class CompactEndPointSerializationHelper
 {
-    public static void serialize(EndPoint endPoint, DataOutputStream dos) throws IOException
-    {        
+    public static void serialize(EndPoint endPoint, DataOutput dos) throws IOException
+    {
         dos.write(EndPoint.toBytes(endPoint));
     }
     

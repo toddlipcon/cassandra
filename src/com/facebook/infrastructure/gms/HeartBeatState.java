@@ -20,7 +20,7 @@ package com.facebook.infrastructure.gms;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import com.facebook.infrastructure.io.ICompactSerializer;
@@ -94,7 +94,7 @@ class HeartBeatState
 
 class HeartBeatStateSerializer implements ICompactSerializer<HeartBeatState>
 {
-    public void serialize(HeartBeatState hbState, DataOutputStream dos) throws IOException
+    public void serialize(HeartBeatState hbState, DataOutput dos) throws IOException
     {
         dos.writeInt(hbState.generation_);
         dos.writeInt(hbState.heartbeat_.get());

@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.service;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -175,7 +175,7 @@ public final class RequestCountSampler
          * going to reside in it.
          */
 
-        public void serialize(Cardinality cardinality, DataOutputStream dos)
+        public void serialize(Cardinality cardinality, DataOutput dos)
                 throws IOException
         {
             /* write out the CountinBloomFilter */

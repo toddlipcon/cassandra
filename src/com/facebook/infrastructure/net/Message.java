@@ -22,7 +22,7 @@ import java.lang.reflect.Array;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -205,7 +205,7 @@ public class Message implements java.io.Serializable
 
 class MessageSerializer implements ICompactSerializer<Message>
 {
-    public void serialize(Message t, DataOutputStream dos) throws IOException
+    public void serialize(Message t, DataOutput dos) throws IOException
     {
         Header.serializer().serialize( t.header_, dos);
         byte[] bytes = (byte[])t.getMessageBody()[0];

@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.net;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -133,7 +133,7 @@ public class Header implements java.io.Serializable
 
 class HeaderSerializer implements ICompactSerializer<Header>
 {
-    public void serialize(Header t, DataOutputStream dos) throws IOException
+    public void serialize(Header t, DataOutput dos) throws IOException
     {           
         dos.writeUTF(t.getMessageId());
         CompactEndPointSerializationHelper.serialize(t.getFrom(), dos);

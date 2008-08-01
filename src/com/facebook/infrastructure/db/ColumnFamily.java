@@ -19,7 +19,7 @@
 package com.facebook.infrastructure.db;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Proxy;
@@ -473,7 +473,7 @@ class ColumnFamilySerializer implements ICompactSerializer2<ColumnFamily>
 	 * 	<total number of columns>
 	 * 	<columns data>
 	*/
-    public void serialize(ColumnFamily columnFamily, DataOutputStream dos) throws IOException
+    public void serialize(ColumnFamily columnFamily, DataOutput dos) throws IOException
     {
     	Collection<IColumn> columns = columnFamily.getSortedColumns();
 

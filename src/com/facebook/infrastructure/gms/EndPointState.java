@@ -26,7 +26,7 @@ import java.util.*;
 import org.apache.log4j.Logger;
 
 import com.facebook.infrastructure.utils.*;
-import com.facebook.infrastructure.io.ICompactSerializer;
+import com.facebook.infrastructure.io.ICompactStreamSerializer;
 import com.facebook.infrastructure.io.IFileReader;
 import com.facebook.infrastructure.io.IFileWriter;
 
@@ -39,7 +39,7 @@ import com.facebook.infrastructure.io.IFileWriter;
 
 public class EndPointState
 {
-    private static ICompactSerializer<EndPointState> serializer_;
+    private static ICompactStreamSerializer<EndPointState> serializer_;
     static
     {
         serializer_ = new EndPointStateSerializer();
@@ -53,7 +53,7 @@ public class EndPointState
     boolean isAlive_;
     boolean isAGossiper_;
 
-    public static ICompactSerializer<EndPointState> serializer()
+    public static ICompactStreamSerializer<EndPointState> serializer()
     {
         return serializer_;
     }
@@ -126,7 +126,7 @@ public class EndPointState
     }
 }
 
-class EndPointStateSerializer implements ICompactSerializer<EndPointState>
+class EndPointStateSerializer implements ICompactStreamSerializer<EndPointState>
 {
     private static Logger logger_ = Logger.getLogger(EndPointStateSerializer.class);
     

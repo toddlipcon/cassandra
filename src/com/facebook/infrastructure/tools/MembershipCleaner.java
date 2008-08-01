@@ -22,6 +22,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -110,7 +111,7 @@ public class MembershipCleaner
     
     public static class MembershipCleanerMessageSerializer implements ICompactSerializer<MembershipCleanerMessage>
     {
-        public void serialize(MembershipCleanerMessage mcMessage, DataOutputStream dos) throws IOException
+        public void serialize(MembershipCleanerMessage mcMessage, DataOutput dos) throws IOException
         {            
             dos.writeUTF(mcMessage.getTarget() );                      
         }

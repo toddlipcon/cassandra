@@ -19,11 +19,12 @@
 package com.facebook.infrastructure.gms;
 
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-import com.facebook.infrastructure.io.ICompactSerializer;
+import com.facebook.infrastructure.io.ICompactStreamSerializer;
 import com.facebook.infrastructure.net.EndPoint;
 
 
@@ -36,7 +37,7 @@ import com.facebook.infrastructure.net.EndPoint;
 
 class GossipDigestAckMessage
 {
-    private static ICompactSerializer<GossipDigestAckMessage> serializer_;
+    private static ICompactStreamSerializer<GossipDigestAckMessage> serializer_;
     static
     {
         serializer_ = new GossipDigestAckMessageSerializer();
@@ -45,7 +46,7 @@ class GossipDigestAckMessage
     List<GossipDigest> gDigestList_ = new ArrayList<GossipDigest>();
     Map<EndPoint, EndPointState> epStateMap_ = new HashMap<EndPoint, EndPointState>();
     
-    static ICompactSerializer<GossipDigestAckMessage> serializer()
+    static ICompactStreamSerializer<GossipDigestAckMessage> serializer()
     {
         return serializer_;
     }
@@ -92,7 +93,7 @@ class GossipDigestAckMessage
     }
 }
 
-class GossipDigestAckMessageSerializer implements ICompactSerializer<GossipDigestAckMessage>
+class GossipDigestAckMessageSerializer implements ICompactStreamSerializer<GossipDigestAckMessage>
 {
     public void serialize(GossipDigestAckMessage gDigestAckMessage, DataOutputStream dos) throws IOException
     {

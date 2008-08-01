@@ -19,15 +19,20 @@
 package com.facebook.infrastructure.io;
 
 import java.io.IOException;
-import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.DataInputStream;
 
 /**
  * Allows for the controlled serialization/deserialization of a given type. 
- * Author : Avinash Lakshman ( alakshman@facebook.com) & Prashant Malik ( pmalik@facebook.com )
+ *
+ * This differs from ICompactSerializer in that it takes a DataOutputStream
+ * so that the number of bytes written to the stream can be tracked. This is
+ * used only by the gossip messages which have to be certain not to overflow
+ * the UDP MTU.
+ *
+ * TODO: this is terribly ugly...
  */
-
-public interface ICompactSerializer<T>
+public interface ICompactStreamSerializer<T>
 {
     /**
      * Serialize the specified type into the specified DataOutputStream instance.
@@ -35,7 +40,7 @@ public interface ICompactSerializer<T>
      * @param dos DataOutputStream into which serialization needs to happen.
      * @throws IOException
      */
-    public void serialize(T t, DataOutput dos) throws IOException;
+    public void serialize(T t, DataOutputStream dos) throws IOException;
     
     /**
      * Deserialize into the specified DataInputStream instance.

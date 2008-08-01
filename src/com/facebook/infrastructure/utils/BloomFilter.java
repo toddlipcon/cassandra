@@ -407,7 +407,7 @@ class BloomFilterSerializer implements ICompactSerializer<BloomFilter>
      * going to reside in it.
      */
 
-    public void serialize(BloomFilter bf, DataOutputStream dos)
+    public void serialize(BloomFilter bf, DataOutput dos)
             throws IOException
     {
         /* write out the count of the BloomFilter */
@@ -442,7 +442,7 @@ class CountingBloomFilterSerializer implements ICompactSerializer<BloomFilter.Co
      * going to reside in it.
      */
 
-    public void serialize(BloomFilter.CountingBloomFilter cbf, DataOutputStream dos)
+    public void serialize(BloomFilter.CountingBloomFilter cbf, DataOutput dos)
             throws IOException
     {
         /* write the size of the BloomFilter */
