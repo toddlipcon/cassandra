@@ -158,10 +158,13 @@ public final class StorageService implements IEndPointStateChangeSubscriber, Sto
      */
     private void removeTokenMetadata(EndPoint endpoint)
     {
+        // Make sure endpoints in the TMD are always storage port
+        EndPoint checkedPortEp = new EndPoint(endpoint.getHost(),
+                                              DatabaseDescriptor.getStoragePort());
         while( true )
         {
             TokenMetadata oldTM = tokenMetadata_.get();
-            TokenMetadata newTM = oldTM.remove(endpoint);
+            TokenMetadata newTM = oldTM.remove(checkedPortEp);
             if( tokenMetadata_.compareAndSet(oldTM, newTM) )
                 return;
         }
